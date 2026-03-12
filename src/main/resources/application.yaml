@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: spring-ai-demo
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      base-url: ${OPENAI_BASE_URL}
+      chat:
+        options:
+          model: gpt-5.2
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        model: deepseek-r1:14b
+server:
+  port: 8096
+springdoc:
+  # Swagger UI 界面配置
+  swagger-ui:
+    enabled: true # 是否启用UI，生产环境可关闭
+    path: /swagger-ui.html # UI访问路径
+  # OpenAPI 规范JSON配置
+  api-docs:
+    enabled: true # 是否启用JSON端点，生产环境可关闭
+    path: /v3/api-docs # JSON数据访问路径
+  # 可选：指定扫描的包路径，缩小文档范围
+  packages-to-scan: org.aeryzhao.springaidemo
+  # 可选：全局设置默认的请求/响应类型
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
