@@ -6,6 +6,6 @@
 - [x] 聊天记忆入门
 - [x] 聊天记忆自定义
 - [x] 工具调用
-- [ ] MCP Client
+- [x] MCP Client
 - [ ] MCP Server
 - [ ] RAG

@@ -12,6 +12,15 @@ spring:
       base-url: http://localhost:11434
       chat:
         model: deepseek-r1:14b
+    mcp:
+      client:
+        enabled: true
+        initialized: true
+        name: spring-ai-demo-mcp-client
+        version: 1.0.0
+        type: sync
+        stdio:
+          servers-configuration: classpath:/mcp-servers.json
 server:
   port: 8096
 springdoc:
