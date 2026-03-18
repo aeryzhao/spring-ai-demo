@@ -7,11 +7,14 @@ import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * 自定义聊天记忆仓库演示。
@@ -57,6 +60,12 @@ public class CustomChatMemoryController {
     @GetMapping("/memory-size")
     int memorySize(@RequestParam(value = "conversationId", defaultValue = "custom-session") String conversationId) {
         return this.chatMemoryRepository.findByConversationId(conversationId).size();
+    }
+
+    @Operation(summary = "查看当前会话的记忆")
+    @GetMapping("/memory")
+    List<Message> memory(@RequestParam(value = "conversationId", defaultValue = "custom-session") String conversationId) {
+        return this.chatMemoryRepository.findByConversationId(conversationId);
     }
 
     @Operation(summary = "清空指定会话的记忆")
