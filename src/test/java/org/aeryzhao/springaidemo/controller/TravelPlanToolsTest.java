@@ -1,6 +1,6 @@
-package org.aeryzhao.springaidemo.chat;
+package org.aeryzhao.springaidemo.controller;
 
-import org.aeryzhao.springaidemo.chat.tool.TravelPlanTools;
+import org.aeryzhao.springaidemo.tool.TravelPlanTools;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

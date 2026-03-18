@@ -1,4 +1,4 @@
-package org.aeryzhao.springaidemo.chat;
+package org.aeryzhao.springaidemo.controller;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;

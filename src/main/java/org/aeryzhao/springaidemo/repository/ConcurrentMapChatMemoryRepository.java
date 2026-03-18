@@ -1,4 +1,4 @@
-package org.aeryzhao.springaidemo.chat.memory.repository;
+package org.aeryzhao.springaidemo.repository;
 
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.Message;

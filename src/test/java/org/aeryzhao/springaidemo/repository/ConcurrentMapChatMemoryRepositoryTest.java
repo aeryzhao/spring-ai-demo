@@ -1,6 +1,5 @@
-package org.aeryzhao.springaidemo.chat;
+package org.aeryzhao.springaidemo.repository;
 
-import org.aeryzhao.springaidemo.chat.memory.repository.ConcurrentMapChatMemoryRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;

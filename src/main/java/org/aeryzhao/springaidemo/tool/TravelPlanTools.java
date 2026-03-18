@@ -1,4 +1,4 @@
-package org.aeryzhao.springaidemo.chat.tool;
+package org.aeryzhao.springaidemo.tool;
 
 import org.springframework.ai.tool.annotation.Tool;
 

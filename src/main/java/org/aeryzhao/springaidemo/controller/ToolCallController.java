@@ -1,7 +1,7 @@
-package org.aeryzhao.springaidemo.chat;
+package org.aeryzhao.springaidemo.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import org.aeryzhao.springaidemo.chat.tool.TravelPlanTools;
+import org.aeryzhao.springaidemo.tool.TravelPlanTools;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.openai.OpenAiChatModel;

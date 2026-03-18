@@ -1,7 +1,7 @@
-package org.aeryzhao.springaidemo.chat;
+package org.aeryzhao.springaidemo.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import org.aeryzhao.springaidemo.chat.memory.repository.ConcurrentMapChatMemoryRepository;
+import org.aeryzhao.springaidemo.repository.ConcurrentMapChatMemoryRepository;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
