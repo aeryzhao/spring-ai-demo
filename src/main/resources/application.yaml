@@ -21,6 +21,14 @@ spring:
         type: sync
         stdio:
           servers-configuration: classpath:/mcp-servers.json
+      server:
+        enabled: true
+        name: spring-ai-demo-mcp-server
+        version: 1.0.0
+        type: sync
+        instructions: 提供当前时间查询能力的最小 MCP Server 示例
+        sse-endpoint: /mcp/sse
+        sse-message-endpoint: /mcp/message
 server:
   port: 8096
 springdoc:

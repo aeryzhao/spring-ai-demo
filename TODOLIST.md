@@ -7,5 +7,5 @@
 - [x] 聊天记忆自定义
 - [x] 工具调用
 - [x] MCP Client
-- [ ] MCP Server
+- [x] MCP Server
 - [ ] RAG
