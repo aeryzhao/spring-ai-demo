@@ -1,0 +1,23 @@
+logging:
+  level:
+    org.springframework.ai.mcp: DEBUG
+    io.modelcontextprotocol: DEBUG
+
+spring:
+  application:
+    name: mcp-server
+  ai:
+    mcp:
+      server:
+        enabled: true
+        stdio: false
+        name: comment-mcp-server
+        version: 1.0.0
+        type: SYNC
+        instructions: 操作评论 MCP
+        sse-endpoint: /sse
+        sse-message-endpoint: /mcp/messages
+        keep-alive-interval: 30s
+
+server:
+  port: 8081
