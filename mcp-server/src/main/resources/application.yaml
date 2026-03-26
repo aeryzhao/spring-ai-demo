@@ -18,6 +18,8 @@ spring:
         sse-endpoint: /sse
         sse-message-endpoint: /mcp/messages
         keep-alive-interval: 30s
+        annotation-scanner:
+          enabled: true
 
 server:
   port: 8081

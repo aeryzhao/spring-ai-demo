@@ -1,6 +1,6 @@
 package org.aeryzhao.mcpserver.comment;
 
-import org.springframework.ai.tool.annotation.Tool;
+import org.springaicommunity.mcp.annotation.McpTool;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -16,7 +16,7 @@ public class CommentTools {
 
     private final List<SavedComment> comments = new CopyOnWriteArrayList<>();
 
-    @Tool(description = "模拟保存评论，返回生成的评论 ID、保存时间和状态。")
+    @McpTool(description = "模拟保存评论，返回生成的评论 ID、保存时间和状态。")
     public SaveCommentResponse saveComment(SaveCommentRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("请求体不能为空");
@@ -36,7 +36,7 @@ public class CommentTools {
         return new SaveCommentResponse(savedComment.id(), "SUCCESS", savedComment.savedAt(), comments.size());
     }
 
-    @Tool(description = "查询已经模拟保存的评论列表，可按 articleId 过滤。")
+    @McpTool(description = "查询已经模拟保存的评论列表，可按 articleId 过滤。")
     public CommentListResponse listComments(ListCommentsRequest request) {
         String articleId = request == null ? null : normalizeOptional(request.articleId());
         List<SavedComment> result = comments.stream()
