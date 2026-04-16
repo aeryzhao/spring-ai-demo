@@ -476,4 +476,6 @@ Advisor 是 Spring AI 的“横切增强点”，适合做：
 
 ## 许可证
 
-如需开源发布，建议补充 `LICENSE` 与贡献指南（`CONTRIBUTING.md`）。
+本仓库代码以 **MIT License** 开源发布，详见仓库根目录的 [`LICENSE`](LICENSE)。
+
+> 说明：本仓库示例依赖的第三方库（如 Spring Boot / Spring AI / Milvus SDK 等）遵循各自的许可证；本仓库许可证仅适用于本仓库内的原创代码与文档。
