@@ -1,0 +1,44 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: rag-project
+
+  ai:
+    ollama:
+      base-url: ${OLLAMA_BASE_URL:http://127.0.0.1:11434}
+      chat:
+        options:
+          model: ${OLLAMA_CHAT_MODEL:gemma4:latest}
+          temperature: 0.7
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 100MB
+
+milvus:
+  host: localhost
+  port: 19530
+  database: default
+
+rag:
+  vector:
+    dimension: 4096
+    collection-name: rag_documents
+    index-type: IVF_FLAT
+    metric-type: L2
+    nlist: 1024
+
+  embedding:
+    model-type: ollama
+    ollama:
+      base-url: ${OLLAMA_BASE_URL:http://127.0.0.1:11434}
+      model: qwen3-embedding
+      dimension: 4096
+      timeout-seconds: 120
+
+  document:
+    chunk-size: 1000

@@ -1,0 +1,1565 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RAG 知识问答助手</title>
+  <style>
+    :root {
+      --ink: #17212f;
+      --ink-soft: #415167;
+      --line: #d3deeb;
+      --card: rgba(255, 255, 255, 0.88);
+      --card-strong: #ffffff;
+      --brand: #0f766e;
+      --brand-dark: #0c5f58;
+      --brand-soft: #d8f3ef;
+      --accent: #c96a20;
+      --warn: #b45309;
+      --good: #166534;
+      --bad: #b42318;
+      --shadow-lg: 0 18px 40px rgba(23, 33, 47, 0.12);
+      --shadow-md: 0 10px 26px rgba(23, 33, 47, 0.08);
+      --mono: "SF Mono", "Menlo", "Consolas", monospace;
+      --ui: "Avenir Next", "Trebuchet MS", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--ui);
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 4%, #fff3dc 0%, transparent 42%),
+        radial-gradient(circle at 92% 10%, #dbf7ff 0%, transparent 46%),
+        linear-gradient(132deg, #f3efe8 0%, #eaf3f8 45%, #edf6f2 100%);
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      width: 380px;
+      height: 380px;
+      border-radius: 999px;
+      filter: blur(42px);
+      z-index: -1;
+      opacity: 0.35;
+      animation: drift 12s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    body::before {
+      background: #f8c27a;
+      top: -140px;
+      left: -120px;
+    }
+
+    body::after {
+      background: #65c6c0;
+      bottom: -140px;
+      right: -120px;
+      animation-delay: -6s;
+    }
+
+    .app {
+      width: min(1220px, 94vw);
+      margin: 24px auto 34px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .hero {
+      border: 1px solid #d5e2ea;
+      border-radius: 22px;
+      padding: clamp(18px, 3vw, 28px);
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.76));
+      box-shadow: var(--shadow-lg);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: start;
+      animation: rise 0.45s ease-out;
+    }
+
+    .eyebrow {
+      margin: 0;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 6px 0 8px;
+      font-size: clamp(24px, 4vw, 40px);
+      line-height: 1.15;
+      letter-spacing: 0.01em;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--ink-soft);
+      max-width: 760px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .stats {
+      margin-top: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .stat {
+      min-width: 145px;
+      border: 1px solid #cde1df;
+      border-radius: 14px;
+      background: linear-gradient(145deg, #ffffff, #f4fbf9);
+      padding: 10px 12px;
+    }
+
+    .stat .value {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--brand);
+      line-height: 1;
+    }
+
+    .stat .label {
+      margin: 5px 0 0;
+      color: var(--ink-soft);
+      font-size: 12px;
+    }
+
+    .hero-tools {
+      display: grid;
+      gap: 8px;
+      min-width: 186px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(310px, 430px) minmax(0, 1fr);
+      gap: 14px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .panel {
+      border: 1px solid #d4e0ea;
+      border-radius: 18px;
+      background: var(--card);
+      box-shadow: var(--shadow-md);
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      animation: rise 0.38s ease-out;
+    }
+
+    .panel h2,
+    .chat-head h2 {
+      margin: 0;
+      font-size: 17px;
+      letter-spacing: 0.01em;
+    }
+
+    .panel p.tip,
+    .chat-head p {
+      margin: 0;
+      color: var(--ink-soft);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 12px;
+      color: #56677d;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="file"],
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font: inherit;
+      font-size: 14px;
+      color: var(--ink);
+      background: #fff;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 86px;
+      line-height: 1.5;
+    }
+
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #64b3ac;
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.16);
+    }
+
+    .two-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.15s ease, background-color 0.15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.58;
+      transform: none;
+    }
+
+    .btn-primary {
+      color: #fff;
+      background: linear-gradient(145deg, var(--brand), #128679);
+      box-shadow: 0 8px 18px rgba(15, 118, 110, 0.25);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(145deg, #0f8178, var(--brand-dark));
+    }
+
+    .btn-muted {
+      color: #26354a;
+      background: #e9eff6;
+    }
+
+    .btn-muted:hover {
+      background: #dce7f3;
+    }
+
+    .inline-note {
+      margin: 0;
+      font-size: 12px;
+      color: #6a7a8f;
+    }
+
+    .status {
+      margin: 0;
+      min-height: 18px;
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .status.ok {
+      color: var(--good);
+    }
+
+    .status.warn {
+      color: var(--warn);
+    }
+
+    .status.err {
+      color: var(--bad);
+    }
+
+    .history {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 6px;
+      max-height: 180px;
+      overflow: auto;
+    }
+
+    .history li {
+      border: 1px solid #dce6ef;
+      border-radius: 12px;
+      background: #fff;
+      padding: 8px 10px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .history .title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #304359;
+      word-break: break-word;
+    }
+
+    .history .meta {
+      font-size: 12px;
+      color: #62748b;
+    }
+
+    .history .empty {
+      color: #73849a;
+      font-size: 12px;
+      border-style: dashed;
+      text-align: center;
+      padding: 12px;
+    }
+
+    .results {
+      display: grid;
+      gap: 8px;
+      max-height: 330px;
+      overflow: auto;
+    }
+
+    .result-item {
+      border: 1px solid #d8e4ef;
+      border-radius: 12px;
+      background: #fff;
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .result-score {
+      font-size: 12px;
+      color: var(--brand);
+      font-weight: 600;
+    }
+
+    .result-content {
+      margin: 0;
+      font-size: 13px;
+      color: #304359;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .result-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .pill {
+      border-radius: 999px;
+      border: 1px solid #d2dee9;
+      background: #f5f9ff;
+      color: #4a627d;
+      padding: 2px 8px;
+      font-size: 11px;
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chat-panel {
+      border: 1px solid #d2dfeb;
+      border-radius: 18px;
+      background: var(--card);
+      box-shadow: var(--shadow-md);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 700px;
+      animation: rise 0.38s ease-out;
+    }
+
+    .chat-head {
+      padding: 14px;
+      border-bottom: 1px solid #dbe6f0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .chat-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .chat-meta .hint {
+      margin: 0;
+      font-size: 12px;
+      color: #6a7b90;
+    }
+
+    .chat-list {
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      overflow: auto;
+      align-content: start;
+    }
+
+    .msg {
+      max-width: min(92%, 760px);
+      border-radius: 14px;
+      padding: 10px 12px;
+      box-shadow: 0 5px 12px rgba(23, 33, 47, 0.06);
+      display: grid;
+      gap: 8px;
+      animation: pop 0.22s ease-out;
+    }
+
+    .msg .role {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .msg .text {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .msg.user {
+      justify-self: end;
+      background: linear-gradient(145deg, #daf8f2, #c9f0e8);
+      border: 1px solid #b4e7db;
+    }
+
+    .msg.user .role {
+      color: #0f766e;
+    }
+
+    .msg.assistant {
+      justify-self: start;
+      background: #ffffff;
+      border: 1px solid #d8e4ef;
+    }
+
+    .msg.assistant .role {
+      color: #c96a20;
+    }
+
+    .msg.system {
+      justify-self: center;
+      background: #fff7ea;
+      border: 1px solid #f4d8aa;
+    }
+
+    .msg.system .role {
+      color: #b45309;
+    }
+
+    .source-box {
+      border: 1px solid #dbe6ef;
+      border-radius: 10px;
+      background: #f8fbff;
+      padding: 8px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .source-box summary {
+      cursor: pointer;
+      color: #304359;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .source-box pre {
+      margin: 0;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #d3dfeb;
+      background: #fff;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.5;
+      max-height: 180px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .typing {
+      display: inline-flex;
+      gap: 5px;
+      align-items: center;
+      min-height: 16px;
+    }
+
+    .typing span {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #7f93aa;
+      animation: pulse 1s ease-in-out infinite;
+    }
+
+    .typing span:nth-child(2) {
+      animation-delay: 0.15s;
+    }
+
+    .typing span:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+
+    .ask-box {
+      border-top: 1px solid #dbe6f0;
+      padding: 12px 14px 14px;
+      display: grid;
+      gap: 9px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(248, 251, 255, 0.92));
+    }
+
+    .ask-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 120px auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .debug {
+      border: 1px solid #d4e1ec;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.78);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+      animation: rise 0.4s ease-out;
+    }
+
+    .debug summary {
+      cursor: pointer;
+      list-style: none;
+      padding: 12px 14px;
+      background: #eff5fb;
+      font-size: 13px;
+      font-weight: 600;
+      color: #304359;
+    }
+
+    .debug summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .debug-grid {
+      padding: 12px 14px 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .debug-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .debug pre {
+      margin: 0;
+      border: 1px solid #d4dfeb;
+      border-radius: 10px;
+      background: #fff;
+      padding: 10px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.45;
+      max-height: 280px;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .toast-wrap {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      display: grid;
+      gap: 8px;
+      z-index: 40;
+      pointer-events: none;
+    }
+
+    .toast {
+      min-width: 220px;
+      max-width: min(360px, calc(100vw - 32px));
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: #fff;
+      box-shadow: 0 10px 26px rgba(23, 33, 47, 0.28);
+      font-size: 13px;
+      line-height: 1.45;
+      animation: toastIn 0.2s ease-out;
+    }
+
+    .toast.ok {
+      background: #166534;
+    }
+
+    .toast.warn {
+      background: #b45309;
+    }
+
+    .toast.err {
+      background: #b42318;
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pop {
+      from {
+        opacity: 0;
+        transform: scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: translateY(0);
+        opacity: 0.65;
+      }
+      50% {
+        transform: translateY(-2px);
+        opacity: 1;
+      }
+    }
+
+    @keyframes drift {
+      0%, 100% {
+        transform: translate(0, 0);
+      }
+      50% {
+        transform: translate(28px, 18px);
+      }
+    }
+
+    @keyframes toastIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 1050px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-tools {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        min-width: 0;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .chat-panel {
+        min-height: 600px;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .app {
+        width: min(98vw, 98vw);
+      }
+
+      .hero-tools {
+        grid-template-columns: 1fr;
+      }
+
+      .two-cols,
+      .ask-row {
+        grid-template-columns: 1fr;
+      }
+
+      .msg {
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Knowledge Experience</p>
+        <h1>上传资料后，直接用自然语言提问</h1>
+        <p class="lead">这个页面面向普通用户：先把文档放进知识库，再像聊天一样发问。系统会自动检索相关内容并给出答案，你也可以查看答案依据。</p>
+        <div class="stats">
+          <div class="stat">
+            <p class="value" id="statChunks">0</p>
+            <p class="label">已入库文档块</p>
+          </div>
+          <div class="stat">
+            <p class="value" id="statUploads">0</p>
+            <p class="label">累计上传次数</p>
+          </div>
+          <div class="stat">
+            <p class="value" id="statLastQuestion">-</p>
+            <p class="label">最近提问时间</p>
+          </div>
+        </div>
+      </div>
+      <div class="hero-tools">
+        <button id="fillDemoBtn" class="btn-primary" type="button">填入示例问题</button>
+        <button id="clearChatBtn" class="btn-muted" type="button">清空对话区</button>
+        <button id="clearHistoryBtn" class="btn-muted" type="button">清空上传记录</button>
+      </div>
+    </section>
+
+    <section class="layout">
+      <aside class="stack">
+        <section class="panel">
+          <h2>1. 上传文件到知识库</h2>
+          <p class="tip">支持 pdf/doc/docx/xls/xlsx/txt/md/json/xml/csv。单文件上传支持 metadata，多文件上传会忽略 metadata。</p>
+
+          <div class="field">
+            <label for="uploadFiles">选择文件（可多选）</label>
+            <input id="uploadFiles" type="file" multiple />
+          </div>
+
+          <div class="two-cols">
+            <div class="field">
+              <label for="uploadChunkSize">分块大小（可选）</label>
+              <input id="uploadChunkSize" type="number" min="1" placeholder="默认 1000" />
+            </div>
+            <div class="field">
+              <label for="uploadMetadata">metadata（仅单文件）</label>
+              <input id="uploadMetadata" type="text" placeholder='例如 {"author":"张三"}' />
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="uploadBtn" class="btn-primary" type="button">上传到知识库</button>
+          </div>
+          <p class="status" id="uploadStatus"></p>
+
+          <p class="inline-note">最近上传</p>
+          <ul class="history" id="uploadHistory"></ul>
+        </section>
+
+        <section class="panel">
+          <h2>2. 直接粘贴文本</h2>
+          <p class="tip">适合临时说明、FAQ、笔记等短文本。</p>
+
+          <div class="field">
+            <label for="pasteContent">文本内容</label>
+            <textarea id="pasteContent" placeholder="输入要加入知识库的文本内容"></textarea>
+          </div>
+
+          <div class="field">
+            <label for="pasteMetadata">metadata（JSON Object，可选）</label>
+            <textarea id="pasteMetadata" placeholder='例如 {"source":"manual","topic":"产品介绍"}'></textarea>
+          </div>
+
+          <div class="actions">
+            <button id="pasteBtn" class="btn-primary" type="button">保存到知识库</button>
+          </div>
+          <p class="status" id="pasteStatus"></p>
+        </section>
+
+        <section class="panel">
+          <h2>3. 先检索资料（可选）</h2>
+          <p class="tip">检索结果只用于人工预览，正式问答会再次自动检索。</p>
+
+          <div class="two-cols">
+            <div class="field">
+              <label for="searchQuery">检索关键词</label>
+              <input id="searchQuery" type="text" placeholder="例如：退款流程" />
+            </div>
+            <div class="field">
+              <label for="searchTopK">返回条数</label>
+              <input id="searchTopK" type="number" min="1" max="100" value="5" />
+            </div>
+          </div>
+
+          <div class="actions">
+            <button id="searchBtn" class="btn-muted" type="button">开始检索</button>
+          </div>
+          <p class="status" id="searchStatus"></p>
+
+          <div class="results" id="searchResults"></div>
+        </section>
+      </aside>
+
+      <section class="chat-panel">
+        <div class="chat-head">
+          <h2>智能问答</h2>
+          <p>提问后系统会基于知识库内容回答。若知识库没有相关信息，答案会明确说明。</p>
+          <div class="chat-meta">
+            <p class="hint" id="askStatus">准备就绪</p>
+          </div>
+        </div>
+
+        <div class="chat-list" id="chatList"></div>
+
+        <div class="ask-box">
+          <div class="ask-row">
+            <div class="field">
+              <label for="questionInput">你的问题</label>
+              <textarea id="questionInput" placeholder="例如：我们产品的售后政策是什么？"></textarea>
+            </div>
+            <div class="field">
+              <label for="askTopK">检索深度 topK</label>
+              <input id="askTopK" type="number" min="1" max="20" value="3" />
+            </div>
+            <button id="askBtn" class="btn-primary" type="button">发送问题</button>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <details class="debug">
+      <summary>开发者设置与调试日志（默认折叠）</summary>
+      <div class="debug-grid">
+        <div class="field">
+          <label for="baseUrl">服务地址（留空时使用当前站点）</label>
+          <input id="baseUrl" type="text" placeholder="例如 http://localhost:8080" />
+        </div>
+
+        <div class="debug-actions">
+          <button id="pingBtn" class="btn-muted" type="button">检测连通性</button>
+          <button id="clearDebugBtn" class="btn-muted" type="button">清空调试日志</button>
+        </div>
+
+        <pre id="debugLog">暂无请求</pre>
+      </div>
+    </details>
+  </main>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <script>
+    (function () {
+      var STORAGE_BASE_URL = 'rag-c-user-base-url';
+      var STORAGE_STATE = 'rag-c-user-dashboard-state';
+      var MAX_HISTORY = 12;
+
+      var state = {
+        totalChunks: 0,
+        totalUploads: 0,
+        lastQuestion: '',
+        uploads: []
+      };
+
+      function el(id) {
+        return document.getElementById(id);
+      }
+
+      function text(node, value) {
+        node.textContent = value == null ? '' : String(value);
+      }
+
+      function clampHistory(items) {
+        return items.slice(0, MAX_HISTORY);
+      }
+
+      function getBaseUrl() {
+        var value = el('baseUrl').value.trim();
+        return value ? value.replace(/\/$/, '') : window.location.origin;
+      }
+
+      function saveBaseUrl() {
+        localStorage.setItem(STORAGE_BASE_URL, el('baseUrl').value.trim());
+      }
+
+      function loadBaseUrl() {
+        var saved = localStorage.getItem(STORAGE_BASE_URL);
+        if (saved) {
+          el('baseUrl').value = saved;
+        }
+      }
+
+      function loadState() {
+        try {
+          var raw = localStorage.getItem(STORAGE_STATE);
+          if (!raw) {
+            return;
+          }
+          var parsed = JSON.parse(raw);
+          if (!parsed || typeof parsed !== 'object') {
+            return;
+          }
+
+          state.totalChunks = Number(parsed.totalChunks) || 0;
+          state.totalUploads = Number(parsed.totalUploads) || 0;
+          state.lastQuestion = parsed.lastQuestion || '';
+          state.uploads = Array.isArray(parsed.uploads) ? clampHistory(parsed.uploads) : [];
+        } catch (err) {
+          console.warn('Load state failed:', err);
+        }
+      }
+
+      function saveState() {
+        localStorage.setItem(STORAGE_STATE, JSON.stringify(state));
+      }
+
+      function nowLabel() {
+        return new Date().toLocaleString('zh-CN', { hour12: false });
+      }
+
+      function updateStats() {
+        text(el('statChunks'), state.totalChunks);
+        text(el('statUploads'), state.totalUploads);
+        text(el('statLastQuestion'), state.lastQuestion || '-');
+      }
+
+      function setStatus(id, message, level) {
+        var node = el(id);
+        node.textContent = message || '';
+        node.className = 'status' + (level ? ' ' + level : '');
+      }
+
+      function toast(message, level, timeout) {
+        var wrap = el('toastWrap');
+        var item = document.createElement('div');
+        item.className = 'toast ' + (level || 'ok');
+        item.textContent = message;
+        wrap.appendChild(item);
+
+        window.setTimeout(function () {
+          item.remove();
+        }, timeout || 2200);
+      }
+
+      function setLoading(button, loading, loadingText) {
+        if (!button.dataset.originText) {
+          button.dataset.originText = button.textContent;
+        }
+        button.disabled = loading;
+        button.textContent = loading ? loadingText : button.dataset.originText;
+      }
+
+      function tryParseJson(textValue) {
+        if (!textValue) {
+          return null;
+        }
+        try {
+          return JSON.parse(textValue);
+        } catch (err) {
+          return textValue;
+        }
+      }
+
+      function parseMetadataObject(raw, fieldName) {
+        var trimmed = raw.trim();
+        if (!trimmed) {
+          return {};
+        }
+
+        var parsed;
+        try {
+          parsed = JSON.parse(trimmed);
+        } catch (err) {
+          throw new Error(fieldName + ' 不是合法 JSON：' + err.message);
+        }
+
+        if (parsed === null || Array.isArray(parsed) || typeof parsed !== 'object') {
+          throw new Error(fieldName + ' 必须是 JSON Object');
+        }
+
+        return parsed;
+      }
+
+      function getHeadersObject(response) {
+        var headers = {};
+        response.headers.forEach(function (value, key) {
+          headers[key] = value;
+        });
+        return headers;
+      }
+
+      function previewBody(body) {
+        if (!body) {
+          return null;
+        }
+
+        if (body instanceof FormData) {
+          var list = [];
+          body.forEach(function (value, key) {
+            if (value instanceof File) {
+              list.push({ key: key, file: value.name, size: value.size, type: value.type || 'application/octet-stream' });
+            } else {
+              list.push({ key: key, value: value });
+            }
+          });
+          return list;
+        }
+
+        if (typeof body === 'string') {
+          return tryParseJson(body);
+        }
+
+        return body;
+      }
+
+      function updateDebugLog(log) {
+        el('debugLog').textContent = JSON.stringify(log, null, 2);
+      }
+
+      function normalizeErrorMessage(payload, status) {
+        if (payload && typeof payload === 'object') {
+          if (payload.message) {
+            return payload.message;
+          }
+          if (payload.error) {
+            return payload.error;
+          }
+        }
+        if (typeof payload === 'string' && payload.trim()) {
+          return payload;
+        }
+        return '请求失败（HTTP ' + status + '）';
+      }
+
+      async function request(path, options) {
+        var url = getBaseUrl() + path;
+        var requestOptions = options || { method: 'GET' };
+        if (!requestOptions.method) {
+          requestOptions.method = 'GET';
+        }
+
+        var start = performance.now();
+        var response;
+
+        try {
+          response = await fetch(url, requestOptions);
+        } catch (err) {
+          updateDebugLog({
+            request: {
+              method: requestOptions.method,
+              url: url,
+              headers: requestOptions.headers || null,
+              body: previewBody(requestOptions.body)
+            },
+            error: String(err.message || err)
+          });
+          throw new Error('网络连接失败：' + err.message);
+        }
+
+        var elapsed = Math.round(performance.now() - start);
+        var rawText = await response.text();
+        var payload = tryParseJson(rawText);
+        var headers = getHeadersObject(response);
+
+        updateDebugLog({
+          request: {
+            method: requestOptions.method,
+            url: url,
+            headers: requestOptions.headers || null,
+            body: previewBody(requestOptions.body)
+          },
+          response: {
+            status: response.status,
+            elapsedMs: elapsed,
+            headers: headers,
+            body: payload
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(normalizeErrorMessage(payload, response.status));
+        }
+
+        return {
+          status: response.status,
+          body: payload,
+          elapsedMs: elapsed
+        };
+      }
+
+      function appendUploadHistory(record) {
+        state.uploads.unshift(record);
+        state.uploads = clampHistory(state.uploads);
+        saveState();
+        renderUploadHistory();
+      }
+
+      function renderUploadHistory() {
+        var list = el('uploadHistory');
+        list.innerHTML = '';
+
+        if (!state.uploads.length) {
+          var empty = document.createElement('li');
+          empty.className = 'empty';
+          empty.textContent = '还没有上传记录';
+          list.appendChild(empty);
+          return;
+        }
+
+        state.uploads.forEach(function (item) {
+          var li = document.createElement('li');
+
+          var title = document.createElement('p');
+          title.className = 'title';
+          title.textContent = item.title;
+
+          var meta = document.createElement('p');
+          meta.className = 'meta';
+          meta.textContent = item.meta;
+
+          li.appendChild(title);
+          li.appendChild(meta);
+          list.appendChild(li);
+        });
+      }
+
+      function createMessage(role, content) {
+        var chat = el('chatList');
+        var wrap = document.createElement('article');
+        wrap.className = 'msg ' + role;
+
+        var roleNode = document.createElement('p');
+        roleNode.className = 'role';
+        roleNode.textContent = role === 'user' ? '你' : (role === 'assistant' ? '知识助手' : '系统提示');
+
+        var contentNode = document.createElement('p');
+        contentNode.className = 'text';
+        if (typeof content === 'string') {
+          contentNode.textContent = content;
+        } else {
+          contentNode.appendChild(content);
+        }
+
+        wrap.appendChild(roleNode);
+        wrap.appendChild(contentNode);
+        chat.appendChild(wrap);
+        chat.scrollTop = chat.scrollHeight;
+
+        return wrap;
+      }
+
+      function createTypingNode() {
+        var box = document.createElement('span');
+        box.className = 'typing';
+        box.innerHTML = '<span></span><span></span><span></span>';
+        return box;
+      }
+
+      function renderSources(container, sources) {
+        if (!Array.isArray(sources) || !sources.length) {
+          return;
+        }
+
+        var details = document.createElement('details');
+        details.className = 'source-box';
+
+        var summary = document.createElement('summary');
+        summary.textContent = '查看答案依据（' + sources.length + ' 条）';
+        details.appendChild(summary);
+
+        sources.forEach(function (source, index) {
+          var pre = document.createElement('pre');
+          pre.textContent = '[依据 ' + (index + 1) + ']\n' + String(source);
+          details.appendChild(pre);
+        });
+
+        container.appendChild(details);
+      }
+
+      function renderSearchResults(results, query) {
+        var wrap = el('searchResults');
+        wrap.innerHTML = '';
+
+        if (!results.length) {
+          var empty = document.createElement('p');
+          empty.className = 'inline-note';
+          empty.textContent = '没有找到匹配结果，可尝试更短的关键词。';
+          wrap.appendChild(empty);
+          return;
+        }
+
+        results.forEach(function (item) {
+          var card = document.createElement('article');
+          card.className = 'result-item';
+
+          var score = Number(item.score);
+          var scoreText = Number.isFinite(score)
+            ? ('相似度 ' + (score * 100).toFixed(1) + '%')
+            : '相似度 -';
+
+          var scoreNode = document.createElement('p');
+          scoreNode.className = 'result-score';
+          scoreNode.textContent = scoreText + (item.id != null ? (' · 文档ID ' + item.id) : '');
+
+          var contentNode = document.createElement('p');
+          contentNode.className = 'result-content';
+          contentNode.textContent = item.content || '';
+
+          var metaNode = document.createElement('div');
+          metaNode.className = 'result-meta';
+          if (item.metadata && typeof item.metadata === 'object') {
+            Object.keys(item.metadata).slice(0, 4).forEach(function (key) {
+              var pill = document.createElement('span');
+              pill.className = 'pill';
+              pill.title = key + ': ' + String(item.metadata[key]);
+              pill.textContent = key + ': ' + String(item.metadata[key]);
+              metaNode.appendChild(pill);
+            });
+          }
+
+          var actions = document.createElement('div');
+          actions.className = 'actions';
+          var askFromResultBtn = document.createElement('button');
+          askFromResultBtn.type = 'button';
+          askFromResultBtn.className = 'btn-muted';
+          askFromResultBtn.textContent = '基于这条内容提问';
+          askFromResultBtn.addEventListener('click', function () {
+            el('questionInput').value = '请根据以下线索回答：' + query + '\n\n线索：' + (item.content || '').slice(0, 240);
+            el('questionInput').focus();
+          });
+
+          actions.appendChild(askFromResultBtn);
+
+          card.appendChild(scoreNode);
+          card.appendChild(contentNode);
+          if (metaNode.childNodes.length) {
+            card.appendChild(metaNode);
+          }
+          card.appendChild(actions);
+
+          wrap.appendChild(card);
+        });
+      }
+
+      function clearChat() {
+        var chat = el('chatList');
+        chat.innerHTML = '';
+        createMessage('system', '欢迎使用知识问答助手。建议先上传文档，再进行提问。');
+      }
+
+      async function handleUpload() {
+        var button = el('uploadBtn');
+        var statusId = 'uploadStatus';
+
+        try {
+          var filesInput = el('uploadFiles');
+          var files = filesInput.files;
+          if (!files || !files.length) {
+            throw new Error('请先选择至少一个文件');
+          }
+
+          var chunkText = el('uploadChunkSize').value.trim();
+          if (chunkText) {
+            var chunk = Number(chunkText);
+            if (!Number.isInteger(chunk) || chunk < 1) {
+              throw new Error('分块大小必须是大于等于 1 的整数');
+            }
+          }
+
+          var metadataText = el('uploadMetadata').value.trim();
+          var path;
+          var form = new FormData();
+
+          if (files.length === 1) {
+            path = '/api/documents/upload';
+            form.append('file', files[0]);
+            if (chunkText) {
+              form.append('chunkSize', chunkText);
+            }
+            if (metadataText) {
+              form.append('metadata', metadataText);
+            }
+          } else {
+            path = '/api/documents/upload/batch';
+            for (var i = 0; i < files.length; i++) {
+              form.append('files', files[i]);
+            }
+            if (chunkText) {
+              form.append('chunkSize', chunkText);
+            }
+            if (metadataText) {
+              setStatus(statusId, '批量上传不支持 metadata，已自动忽略', 'warn');
+            }
+          }
+
+          setLoading(button, true, '上传中...');
+          setStatus(statusId, '正在上传并向量化，请稍候...', '');
+
+          var res = await request(path, {
+            method: 'POST',
+            body: form
+          });
+
+          var items = Array.isArray(res.body) ? res.body : [res.body];
+          var validItems = items.filter(function (it) { return it && typeof it === 'object'; });
+
+          var addedChunks = validItems.reduce(function (sum, it) {
+            return sum + (Number(it.chunksCount) || 0);
+          }, 0);
+
+          state.totalChunks += addedChunks;
+          state.totalUploads += validItems.length || files.length;
+          updateStats();
+          saveState();
+
+          validItems.forEach(function (it) {
+            appendUploadHistory({
+              title: (it.filename || '未命名文件') + ' · ' + (it.chunksCount || 0) + ' 块',
+              meta: nowLabel() + ' · ' + (it.message || '上传完成')
+            });
+          });
+
+          setStatus(statusId, '上传成功，新增 ' + addedChunks + ' 个文档块（耗时 ' + res.elapsedMs + 'ms）', 'ok');
+          toast('文件已加入知识库', 'ok');
+
+          filesInput.value = '';
+          el('uploadMetadata').value = '';
+        } catch (err) {
+          setStatus(statusId, err.message, 'err');
+          toast(err.message, 'err', 2600);
+        } finally {
+          setLoading(button, false);
+        }
+      }
+
+      async function handlePasteInsert() {
+        var button = el('pasteBtn');
+        var statusId = 'pasteStatus';
+
+        try {
+          var content = el('pasteContent').value.trim();
+          if (!content) {
+            throw new Error('文本内容不能为空');
+          }
+
+          if (content.length > 65535) {
+            throw new Error('文本长度不能超过 65535');
+          }
+
+          var metadata = parseMetadataObject(el('pasteMetadata').value, 'metadata');
+
+          setLoading(button, true, '保存中...');
+          setStatus(statusId, '正在写入知识库...', '');
+
+          var res = await request('/api/documents', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              content: content,
+              metadata: metadata
+            })
+          });
+
+          state.totalChunks += 1;
+          state.totalUploads += 1;
+          updateStats();
+          saveState();
+
+          appendUploadHistory({
+            title: '手动录入文本 · 1 块',
+            meta: nowLabel() + ' · 文档ID ' + ((res.body && res.body.id) || '-')
+          });
+
+          setStatus(statusId, '已保存到知识库（文档ID ' + ((res.body && res.body.id) || '-') + '）', 'ok');
+          toast('文本保存成功', 'ok');
+
+          el('pasteContent').value = '';
+        } catch (err) {
+          setStatus(statusId, err.message, 'err');
+          toast(err.message, 'err', 2600);
+        } finally {
+          setLoading(button, false);
+        }
+      }
+
+      async function handleSearch() {
+        var button = el('searchBtn');
+        var statusId = 'searchStatus';
+
+        try {
+          var query = el('searchQuery').value.trim();
+          if (!query) {
+            throw new Error('请输入检索关键词');
+          }
+
+          var topK = Number(el('searchTopK').value || 5);
+          if (!Number.isInteger(topK) || topK < 1 || topK > 100) {
+            throw new Error('返回条数应为 1 到 100 的整数');
+          }
+
+          setLoading(button, true, '检索中...');
+          setStatus(statusId, '正在匹配相关资料...', '');
+
+          var res = await request('/api/documents/search?query=' + encodeURIComponent(query) + '&topK=' + encodeURIComponent(String(topK)), {
+            method: 'GET'
+          });
+
+          var results = (res.body && Array.isArray(res.body.results)) ? res.body.results : [];
+          renderSearchResults(results, query);
+
+          setStatus(statusId, '检索完成，共 ' + results.length + ' 条（耗时 ' + res.elapsedMs + 'ms）', 'ok');
+        } catch (err) {
+          setStatus(statusId, err.message, 'err');
+          renderSearchResults([], '');
+        } finally {
+          setLoading(button, false);
+        }
+      }
+
+      async function handleAsk() {
+        var button = el('askBtn');
+
+        try {
+          var question = el('questionInput').value.trim();
+          if (!question) {
+            throw new Error('请输入问题');
+          }
+
+          var topK = Number(el('askTopK').value || 3);
+          if (!Number.isInteger(topK) || topK < 1 || topK > 20) {
+            throw new Error('topK 必须是 1 到 20 的整数');
+          }
+
+          createMessage('user', question);
+          el('questionInput').value = '';
+
+          var typingMsg = createMessage('assistant', createTypingNode());
+
+          setLoading(button, true, '生成中...');
+          setStatus('askStatus', '正在检索知识库并生成回答...', '');
+
+          var res = await request('/api/ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question: question, topK: topK })
+          });
+
+          typingMsg.remove();
+
+          var answer = res.body && typeof res.body.answer === 'string'
+            ? res.body.answer
+            : '系统未返回可读答案';
+
+          var message = createMessage('assistant', answer);
+          renderSources(message, res.body && res.body.sources);
+
+          state.lastQuestion = nowLabel();
+          updateStats();
+          saveState();
+
+          setStatus('askStatus', '回答完成（耗时 ' + res.elapsedMs + 'ms）', 'ok');
+        } catch (err) {
+          createMessage('system', err.message);
+          setStatus('askStatus', err.message, 'err');
+          toast(err.message, 'err', 2600);
+        } finally {
+          setLoading(button, false);
+        }
+      }
+
+      async function handlePing() {
+        var button = el('pingBtn');
+        try {
+          setLoading(button, true, '检测中...');
+          await request('/v3/api-docs', { method: 'GET' });
+          toast('连接成功，可访问 /v3/api-docs', 'ok');
+        } catch (err) {
+          toast('连接失败：' + err.message, 'err', 2800);
+        } finally {
+          setLoading(button, false);
+        }
+      }
+
+      function clearDebugLog() {
+        text(el('debugLog'), '暂无请求');
+      }
+
+      function clearUploadHistory() {
+        state.uploads = [];
+        saveState();
+        renderUploadHistory();
+        toast('上传记录已清空', 'warn');
+      }
+
+      function fillDemoQuestion() {
+        el('questionInput').value = '请根据知识库内容，总结产品售后流程并列出关键步骤。';
+        el('questionInput').focus();
+      }
+
+      function init() {
+        loadBaseUrl();
+        loadState();
+        updateStats();
+        renderUploadHistory();
+        clearChat();
+
+        el('baseUrl').addEventListener('change', saveBaseUrl);
+        el('baseUrl').addEventListener('blur', saveBaseUrl);
+
+        el('uploadBtn').addEventListener('click', handleUpload);
+        el('pasteBtn').addEventListener('click', handlePasteInsert);
+        el('searchBtn').addEventListener('click', handleSearch);
+        el('askBtn').addEventListener('click', handleAsk);
+        el('pingBtn').addEventListener('click', handlePing);
+        el('clearDebugBtn').addEventListener('click', clearDebugLog);
+        el('clearChatBtn').addEventListener('click', clearChat);
+        el('clearHistoryBtn').addEventListener('click', clearUploadHistory);
+        el('fillDemoBtn').addEventListener('click', fillDemoQuestion);
+
+        el('questionInput').addEventListener('keydown', function (event) {
+          if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+            handleAsk();
+          }
+        });
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>

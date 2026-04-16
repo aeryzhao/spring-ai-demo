@@ -8,4 +8,4 @@
 - [x] 工具调用
 - [x] MCP Client
 - [x] MCP Server
-- [ ] RAG
+- [x] RAG
