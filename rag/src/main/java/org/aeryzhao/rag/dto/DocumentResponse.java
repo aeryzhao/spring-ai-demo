@@ -13,8 +13,8 @@ import lombok.NoArgsConstructor;
 @Schema(description = "文档插入响应")
 public class DocumentResponse {
     
-    @Schema(description = "插入的文档ID", example = "123456789")
-    private Long id;
+    @Schema(description = "插入的文档ID", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+    private String id;
     
     @Schema(description = "操作结果消息", example = "Document inserted successfully")
     private String message;

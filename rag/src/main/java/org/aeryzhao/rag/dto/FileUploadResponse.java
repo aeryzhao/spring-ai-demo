@@ -16,7 +16,7 @@ import java.util.List;
 public class FileUploadResponse {
 
     @Schema(description = "上传成功的文档ID列表")
-    private List<Long> documentIds;
+    private List<String> documentIds;
 
     @Schema(description = "处理的文档块数量")
     private Integer chunksCount;

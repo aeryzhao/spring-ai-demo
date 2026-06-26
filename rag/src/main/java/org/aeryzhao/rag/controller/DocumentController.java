@@ -1,11 +1,7 @@
 package org.aeryzhao.rag.controller;
 
 import org.aeryzhao.rag.dto.*;
-import org.aeryzhao.rag.entity.Document;
 import org.aeryzhao.rag.service.DocumentParserService;
-import org.aeryzhao.rag.service.DocumentService;
-import org.aeryzhao.rag.service.DocumentService.SearchResultWithScore;
-import org.aeryzhao.rag.service.EmbeddingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -18,6 +14,9 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -30,6 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -37,19 +37,16 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/documents")
 @Tag(name = "文档管理", description = "文档的插入、检索和搜索相关接口")
 public class DocumentController {
-    
+
     @Autowired
-    private DocumentService documentService;
-    
-    @Autowired
-    private EmbeddingService embeddingService;
+    private VectorStore vectorStore;
 
     @Autowired
     private DocumentParserService documentParserService;
 
     @Value("${rag.document.chunk-size:1000}")
     private int defaultChunkSize;
-    
+
     @PostMapping
     @Operation(
         summary = "插入文档",
@@ -80,26 +77,24 @@ public class DocumentController {
     public ResponseEntity<DocumentResponse> insertDocument(
             @Parameter(description = "文档插入请求", required = true)
             @Valid @RequestBody DocumentRequest request) {
-        log.info("Received document insertion request with content length: {}", 
+        log.info("Received document insertion request with content length: {}",
                 request.getContent() != null ? request.getContent().length() : 0);
-        
-        Document document = Document.builder()
-                .content(request.getContent())
-                .metadata(request.getMetadata())
-                .build();
-        
-        Long documentId = documentService.insertDocument(document);
-        
+
+        String docId = UUID.randomUUID().toString();
+        Document document = new Document(docId, request.getContent(), request.getMetadata());
+
+        vectorStore.add(List.of(document));
+
         DocumentResponse response = DocumentResponse.builder()
-                .id(documentId)
+                .id(docId)
                 .message("Document inserted successfully")
                 .build();
-        
-        log.info("Document inserted with ID: {}", documentId);
-        
+
+        log.info("Document inserted with ID: {}", docId);
+
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-    
+
     @GetMapping("/search")
     @Operation(
         summary = "搜索文档",
@@ -131,34 +126,32 @@ public class DocumentController {
             @Parameter(description = "搜索查询文本", example = "人工智能应用", required = true)
             @RequestParam @NotBlank(message = "Query cannot be blank") String query,
             @Parameter(description = "返回结果数量，范围1-100", example = "5")
-            @RequestParam(required = false, defaultValue = "5") 
-            @Min(value = 1, message = "topK must be at least 1") 
+            @RequestParam(required = false, defaultValue = "5")
+            @Min(value = 1, message = "topK must be at least 1")
             @Max(value = 100, message = "topK cannot exceed 100") Integer topK) {
-        
+
         log.info("Received search request with query length: {}, topK: {}", query.length(), topK);
-        
-        List<Float> queryVector = embeddingService.embed(query);
-        
-        List<SearchResultWithScore> searchResults = documentService.searchSimilar(queryVector, topK);
-        
+
+        SearchRequest searchRequest = SearchRequest.builder()
+                .query(query)
+                .topK(topK)
+                .build();
+        List<Document> searchResults = vectorStore.similaritySearch(searchRequest);
+
         List<SearchResult> results = searchResults.stream()
-                .map(result -> {
-                    Document doc = result.getDocument();
-                    return SearchResult.builder()
-                            .id(doc.getId())
-                            .content(doc.getContent())
-                            .metadata(doc.getMetadata())
-                            .score(result.getScore())
-                            .build();
-                })
+                .map(doc -> SearchResult.builder()
+                        .id(doc.getId())
+                        .content(doc.getText())
+                        .metadata(doc.getMetadata())
+                        .build())
                 .collect(Collectors.toList());
-        
+
         SearchResponse response = SearchResponse.builder()
                 .results(results)
                 .build();
-        
+
         log.info("Search completed with {} results", results.size());
-        
+
         return ResponseEntity.ok(response);
     }
 
@@ -196,28 +189,23 @@ public class DocumentController {
             @RequestParam(required = false) Integer chunkSize,
             @Parameter(description = "文档元数据（JSON格式）", example = "{\"author\": \"张三\", \"category\": \"技术文档\"}")
             @RequestParam(required = false) String metadata) throws IOException {
-        
+
         String filename = file.getOriginalFilename();
         log.info("Received file upload request: {}, size: {} bytes", filename, file.getSize());
-        
+
         if (file.isEmpty()) {
             throw new IllegalArgumentException("File cannot be empty");
         }
-        
+
         if (!documentParserService.isSupportedFormat(filename)) {
             throw new UnsupportedOperationException(
                 "Unsupported file format. Supported formats: pdf, doc, docx, xls, xlsx, txt, md, json, xml, csv"
             );
         }
-        
+
         int actualChunkSize = chunkSize != null ? chunkSize : defaultChunkSize;
-        
-        List<String> chunks = documentParserService.parseDocumentToChunks(file, actualChunkSize);
-        
-        if (chunks.isEmpty()) {
-            throw new IllegalArgumentException("No content extracted from the document");
-        }
-        
+
+        // 构建元数据
         Map<String, Object> metadataMap = new HashMap<>();
         metadataMap.put("filename", filename);
         metadataMap.put("contentType", file.getContentType());
@@ -225,36 +213,30 @@ public class DocumentController {
         if (metadata != null && !metadata.isEmpty()) {
             metadataMap.put("customMetadata", metadata);
         }
-        
-        List<Long> documentIds = new ArrayList<>();
-        for (int i = 0; i < chunks.size(); i++) {
-            String chunk = chunks.get(i);
-            if (chunk.trim().isEmpty()) {
-                continue;
-            }
-            
-            Map<String, Object> chunkMetadata = new HashMap<>(metadataMap);
-            chunkMetadata.put("chunkIndex", i);
-            chunkMetadata.put("totalChunks", chunks.size());
-            
-            Document document = Document.builder()
-                    .content(chunk)
-                    .metadata(chunkMetadata)
-                    .build();
-            
-            Long docId = documentService.insertDocument(document);
-            documentIds.add(docId);
+
+        // 解析文件并分块，自动附加元数据
+        List<Document> documents = documentParserService.parseDocumentToChunks(file, actualChunkSize, metadataMap);
+
+        if (documents.isEmpty()) {
+            throw new IllegalArgumentException("No content extracted from the document");
         }
-        
+
+        // 批量存储到向量数据库
+        vectorStore.add(documents);
+
+        List<String> documentIds = documents.stream()
+                .map(Document::getId)
+                .collect(Collectors.toList());
+
         FileUploadResponse response = FileUploadResponse.builder()
                 .documentIds(documentIds)
                 .chunksCount(documentIds.size())
                 .filename(filename)
                 .message("File uploaded and processed successfully")
                 .build();
-        
+
         log.info("File processed successfully: {} chunks inserted", documentIds.size());
-        
+
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -285,75 +267,65 @@ public class DocumentController {
             @RequestParam("files") MultipartFile[] files,
             @Parameter(description = "文档分块大小，默认1000字符", example = "1000")
             @RequestParam(required = false) Integer chunkSize) throws IOException {
-        
+
         log.info("Received batch file upload request: {} files", files.length);
-        
+
         List<FileUploadResponse> responses = new ArrayList<>();
-        
+
         for (MultipartFile file : files) {
             try {
                 String filename = file.getOriginalFilename();
-                
+
                 if (file.isEmpty()) {
                     log.warn("Skipping empty file: {}", filename);
                     continue;
                 }
-                
+
                 if (!documentParserService.isSupportedFormat(filename)) {
                     log.warn("Skipping unsupported file format: {}", filename);
                     continue;
                 }
-                
+
                 int actualChunkSize = chunkSize != null ? chunkSize : defaultChunkSize;
-                List<String> chunks = documentParserService.parseDocumentToChunks(file, actualChunkSize);
-                
-                if (chunks.isEmpty()) {
-                    log.warn("No content extracted from file: {}", filename);
-                    continue;
-                }
-                
+
+                // 构建元数据
                 Map<String, Object> metadataMap = new HashMap<>();
                 metadataMap.put("filename", filename);
                 metadataMap.put("contentType", file.getContentType());
                 metadataMap.put("fileSize", file.getSize());
-                
-                List<Long> documentIds = new ArrayList<>();
-                for (int i = 0; i < chunks.size(); i++) {
-                    String chunk = chunks.get(i);
-                    if (chunk.trim().isEmpty()) {
-                        continue;
-                    }
-                    
-                    Map<String, Object> chunkMetadata = new HashMap<>(metadataMap);
-                    chunkMetadata.put("chunkIndex", i);
-                    chunkMetadata.put("totalChunks", chunks.size());
-                    
-                    Document document = Document.builder()
-                            .content(chunk)
-                            .metadata(chunkMetadata)
-                            .build();
-                    
-                    Long docId = documentService.insertDocument(document);
-                    documentIds.add(docId);
+
+                // 解析文件并分块
+                List<Document> documents = documentParserService.parseDocumentToChunks(file, actualChunkSize, metadataMap);
+
+                if (documents.isEmpty()) {
+                    log.warn("No content extracted from file: {}", filename);
+                    continue;
                 }
-                
+
+                // 批量存储
+                vectorStore.add(documents);
+
+                List<String> documentIds = documents.stream()
+                        .map(Document::getId)
+                        .collect(Collectors.toList());
+
                 FileUploadResponse response = FileUploadResponse.builder()
                         .documentIds(documentIds)
                         .chunksCount(documentIds.size())
                         .filename(filename)
                         .message("File uploaded and processed successfully")
                         .build();
-                
+
                 responses.add(response);
                 log.info("File processed successfully: {} - {} chunks inserted", filename, documentIds.size());
-                
+
             } catch (Exception e) {
                 log.error("Error processing file: {}", file.getOriginalFilename(), e);
             }
         }
-        
+
         log.info("Batch upload completed: {} files processed", responses.size());
-        
+
         return ResponseEntity.status(HttpStatus.CREATED).body(responses);
     }
 }

@@ -15,8 +15,8 @@ import java.util.Map;
 @Schema(description = "搜索结果项")
 public class SearchResult {
     
-    @Schema(description = "文档ID", example = "123456789")
-    private Long id;
+    @Schema(description = "文档ID", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+    private String id;
     
     @Schema(description = "文档内容", example = "人工智能在医疗领域的应用包括疾病诊断、药物研发、医疗影像分析等...")
     private String content;

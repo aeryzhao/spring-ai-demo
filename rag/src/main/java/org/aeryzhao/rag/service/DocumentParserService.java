@@ -13,19 +13,64 @@ import org.apache.poi.xssf.extractor.XSSFExcelExtractor;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xwpf.extractor.XWPFWordExtractor;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Service
 public class DocumentParserService {
 
+    /**
+     * 解析文件并分块为 Spring AI Document 列表
+     */
+    public List<Document> parseDocumentToChunks(MultipartFile file, int chunkSize) throws IOException {
+        String content = parseDocument(file);
+
+        // 使用 Spring AI 的 TokenTextSplitter 进行分块
+        TokenTextSplitter splitter = new TokenTextSplitter(
+                chunkSize / 4,  // 默认每个 token 约 4 个字符，所以 chunkSize 字符 ≈ chunkSize/4 tokens
+                chunkSize / 8,  // min chunk size
+                5,              // min chunk length in tokens
+                10000,          // max num chunks
+                true            // keep separator
+        );
+
+        List<Document> documents = splitter.apply(List.of(new Document(UUID.randomUUID().toString(), content, Map.of())));
+        log.info("Split content into {} chunks", documents.size());
+        return documents;
+    }
+
+    /**
+     * 解析文件为带元数据的 Spring AI Document 列表
+     */
+    public List<Document> parseDocumentToChunks(MultipartFile file, int chunkSize, Map<String, Object> metadata) throws IOException {
+        List<Document> documents = parseDocumentToChunks(file, chunkSize);
+
+        // 为每个 chunk 附加元数据
+        for (int i = 0; i < documents.size(); i++) {
+            Document doc = documents.get(i);
+            Map<String, Object> chunkMetadata = new HashMap<>(metadata);
+            chunkMetadata.put("chunkIndex", i);
+            chunkMetadata.put("totalChunks", documents.size());
+            doc.getMetadata().putAll(chunkMetadata);
+        }
+
+        return documents;
+    }
+
+    /**
+     * 解析文件内容为纯文本
+     */
     public String parseDocument(MultipartFile file) throws IOException {
         String filename = file.getOriginalFilename();
         if (filename == null) {
@@ -43,15 +88,19 @@ public class DocumentParserService {
             case "xlsx" -> parseXlsx(file.getInputStream());
             case "txt", "md", "json", "xml", "csv" -> parseTextFile(file.getInputStream());
             default -> throw new UnsupportedOperationException(
-                "Unsupported file format: " + extension + 
+                "Unsupported file format: " + extension +
                 ". Supported formats: pdf, doc, docx, xls, xlsx, txt, md, json, xml, csv"
             );
         };
     }
 
-    public List<String> parseDocumentToChunks(MultipartFile file, int chunkSize) throws IOException {
-        String content = parseDocument(file);
-        return splitIntoChunks(content, chunkSize);
+    public boolean isSupportedFormat(String filename) {
+        if (filename == null) {
+            return false;
+        }
+        String extension = getFileExtension(filename).toLowerCase();
+        return List.of("pdf", "doc", "docx", "xls", "xlsx", "txt", "md", "json", "xml", "csv")
+                .contains(extension);
     }
 
     private String parsePdf(InputStream inputStream) throws IOException {
@@ -116,63 +165,5 @@ public class DocumentParserService {
             return filename.substring(lastDotIndex + 1);
         }
         return "";
-    }
-
-    private List<String> splitIntoChunks(String content, int chunkSize) {
-        List<String> chunks = new ArrayList<>();
-        
-        if (content == null || content.isEmpty()) {
-            return chunks;
-        }
-
-        if (chunkSize <= 0) {
-            chunkSize = 1000;
-        }
-
-        String[] paragraphs = content.split("\n\n+");
-        StringBuilder currentChunk = new StringBuilder();
-
-        for (String paragraph : paragraphs) {
-            paragraph = paragraph.trim();
-            if (paragraph.isEmpty()) {
-                continue;
-            }
-
-            if (currentChunk.length() + paragraph.length() + 2 > chunkSize) {
-                if (currentChunk.length() > 0) {
-                    chunks.add(currentChunk.toString().trim());
-                    currentChunk = new StringBuilder();
-                }
-
-                if (paragraph.length() > chunkSize) {
-                    int start = 0;
-                    while (start < paragraph.length()) {
-                        int end = Math.min(start + chunkSize, paragraph.length());
-                        chunks.add(paragraph.substring(start, end).trim());
-                        start = end;
-                    }
-                } else {
-                    currentChunk.append(paragraph).append("\n\n");
-                }
-            } else {
-                currentChunk.append(paragraph).append("\n\n");
-            }
-        }
-
-        if (currentChunk.length() > 0) {
-            chunks.add(currentChunk.toString().trim());
-        }
-
-        log.info("Split content into {} chunks with max size {}", chunks.size(), chunkSize);
-        return chunks;
-    }
-
-    public boolean isSupportedFormat(String filename) {
-        if (filename == null) {
-            return false;
-        }
-        String extension = getFileExtension(filename).toLowerCase();
-        return List.of("pdf", "doc", "docx", "xls", "xlsx", "txt", "md", "json", "xml", "csv")
-                .contains(extension);
     }
 }
