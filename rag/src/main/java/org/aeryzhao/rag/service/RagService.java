@@ -8,6 +8,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,8 +23,6 @@ public class RagService {
     public RagService(ChatClient.Builder chatClientBuilder, VectorStore vectorStore) {
         this.vectorStore = vectorStore;
 
-        // 使用 QuestionAnswerAdvisor 实现自动 RAG
-        // 它会自动从 VectorStore 检索相关文档并注入到 Prompt 中
         QuestionAnswerAdvisor qaAdvisor = QuestionAnswerAdvisor.builder(vectorStore).build();
 
         this.chatClient = chatClientBuilder
@@ -32,21 +31,35 @@ public class RagService {
     }
 
     public RagResponse ask(String question, int topK) {
+        return ask(question, topK, null);
+    }
+
+    public RagResponse ask(String question, int topK, String knowledgeBaseId) {
         try {
-            log.info("Processing RAG question with topK: {}", topK);
+            String kbId = StringUtils.hasText(knowledgeBaseId)
+                    ? knowledgeBaseId
+                    : KnowledgeBaseService.DEFAULT_KB_ID;
+            log.info("Processing RAG question with topK: {}, knowledgeBaseId: {}", topK, kbId);
+
+            String filterExpression = "knowledgeBaseId == '%s'".formatted(kbId);
 
             // 1. 使用 VectorStore 检索相关文档（用于返回 sources）
             SearchRequest searchRequest = SearchRequest.builder()
                     .query(question)
                     .topK(topK)
+                    .filterExpression(filterExpression)
                     .build();
             List<Document> relevantDocs = vectorStore.similaritySearch(searchRequest);
             log.info("Found {} relevant documents", relevantDocs.size());
 
             // 2. 使用 ChatClient + QuestionAnswerAdvisor 生成答案
-            //    Advisor 会自动检索文档并注入 Prompt，无需手动构建
+            //    通过 advisor context 传入 filterExpression，让 Advisor 也按知识库过滤
             String answer = chatClient.prompt()
                     .user(question)
+                    .advisors(a -> a.param(
+                            QuestionAnswerAdvisor.FILTER_EXPRESSION,
+                            filterExpression
+                    ))
                     .call()
                     .content();
 

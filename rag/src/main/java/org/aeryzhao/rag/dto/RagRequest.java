@@ -25,4 +25,7 @@ public class RagRequest {
     @Max(value = 20, message = "topK cannot exceed 20")
     @Builder.Default
     private Integer topK = 3;
+
+    @Schema(description = "知识库ID，不指定则使用默认知识库", example = "kb_12345678")
+    private String knowledgeBaseId;
 }

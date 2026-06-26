@@ -24,14 +24,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api")
 @Tag(name = "RAG问答", description = "检索增强生成(Retrieval-Augmented Generation)相关接口")
 public class RagController {
-    
+
     @Autowired
     private RagService ragService;
-    
+
     @PostMapping("/ask")
     @Operation(
         summary = "RAG问答",
-        description = "基于检索增强生成技术回答用户问题。系统会先从向量数据库中检索相关文档，然后结合检索结果生成答案"
+        description = "基于检索增强生成技术回答用户问题。系统会先从向量数据库中检索相关文档，然后结合检索结果生成答案。支持指定知识库进行问答"
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -58,13 +58,18 @@ public class RagController {
     public ResponseEntity<RagResponse> ask(
             @Parameter(description = "RAG问答请求", required = true)
             @Valid @RequestBody RagRequest request) {
-        log.info("Received RAG question: {}", request.getQuestion());
-        
-        RagResponse response = ragService.ask(request.getQuestion(), request.getTopK());
-        
-        log.info("RAG response generated with {} sources", 
+        log.info("Received RAG question: {}, knowledgeBaseId: {}",
+                request.getQuestion(), request.getKnowledgeBaseId());
+
+        RagResponse response = ragService.ask(
+                request.getQuestion(),
+                request.getTopK(),
+                request.getKnowledgeBaseId()
+        );
+
+        log.info("RAG response generated with {} sources",
                 response.getSources() != null ? response.getSources().size() : 0);
-        
+
         return ResponseEntity.ok(response);
     }
 }

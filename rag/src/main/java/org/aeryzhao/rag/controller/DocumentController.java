@@ -2,6 +2,7 @@ package org.aeryzhao.rag.controller;
 
 import org.aeryzhao.rag.dto.*;
 import org.aeryzhao.rag.service.DocumentParserService;
+import org.aeryzhao.rag.service.KnowledgeBaseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -21,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -47,10 +49,16 @@ public class DocumentController {
     @Value("${rag.document.chunk-size:1000}")
     private int defaultChunkSize;
 
+    private String resolveKbId(String knowledgeBaseId) {
+        return StringUtils.hasText(knowledgeBaseId)
+                ? knowledgeBaseId
+                : KnowledgeBaseService.DEFAULT_KB_ID;
+    }
+
     @PostMapping
     @Operation(
         summary = "插入文档",
-        description = "将文档内容插入到向量数据库中，系统会自动生成文档的向量表示并存储"
+        description = "将文档内容插入到向量数据库中，系统会自动生成文档的向量表示并存储。支持指定知识库"
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -76,13 +84,21 @@ public class DocumentController {
     })
     public ResponseEntity<DocumentResponse> insertDocument(
             @Parameter(description = "文档插入请求", required = true)
-            @Valid @RequestBody DocumentRequest request) {
-        log.info("Received document insertion request with content length: {}",
-                request.getContent() != null ? request.getContent().length() : 0);
+            @Valid @RequestBody DocumentRequest request,
+            @Parameter(description = "知识库ID，不指定则使用默认知识库")
+            @RequestParam(required = false) String knowledgeBaseId) {
+        log.info("Received document insertion request with content length: {}, knowledgeBaseId: {}",
+                request.getContent() != null ? request.getContent().length() : 0, knowledgeBaseId);
 
+        String kbId = resolveKbId(knowledgeBaseId);
         String docId = UUID.randomUUID().toString();
-        Document document = new Document(docId, request.getContent(), request.getMetadata());
 
+        Map<String, Object> metadata = request.getMetadata() != null
+                ? new HashMap<>(request.getMetadata())
+                : new HashMap<>();
+        metadata.put("knowledgeBaseId", kbId);
+
+        Document document = new Document(docId, request.getContent(), metadata);
         vectorStore.add(List.of(document));
 
         DocumentResponse response = DocumentResponse.builder()
@@ -90,7 +106,7 @@ public class DocumentController {
                 .message("Document inserted successfully")
                 .build();
 
-        log.info("Document inserted with ID: {}", docId);
+        log.info("Document inserted with ID: {} to knowledge base: {}", docId, kbId);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -98,7 +114,7 @@ public class DocumentController {
     @GetMapping("/search")
     @Operation(
         summary = "搜索文档",
-        description = "基于查询文本进行语义搜索，返回最相似的文档列表。使用向量相似度计算，支持自然语言查询"
+        description = "基于查询文本进行语义搜索，返回最相似的文档列表。支持按知识库过滤"
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -128,13 +144,20 @@ public class DocumentController {
             @Parameter(description = "返回结果数量，范围1-100", example = "5")
             @RequestParam(required = false, defaultValue = "5")
             @Min(value = 1, message = "topK must be at least 1")
-            @Max(value = 100, message = "topK cannot exceed 100") Integer topK) {
+            @Max(value = 100, message = "topK cannot exceed 100") Integer topK,
+            @Parameter(description = "知识库ID，不指定则使用默认知识库")
+            @RequestParam(required = false) String knowledgeBaseId) {
 
-        log.info("Received search request with query length: {}, topK: {}", query.length(), topK);
+        String kbId = resolveKbId(knowledgeBaseId);
+        log.info("Received search request with query length: {}, topK: {}, knowledgeBaseId: {}",
+                query.length(), topK, kbId);
+
+        String filterExpression = "knowledgeBaseId == '%s'".formatted(kbId);
 
         SearchRequest searchRequest = SearchRequest.builder()
                 .query(query)
                 .topK(topK)
+                .filterExpression(filterExpression)
                 .build();
         List<Document> searchResults = vectorStore.similaritySearch(searchRequest);
 
@@ -158,7 +181,7 @@ public class DocumentController {
     @PostMapping("/upload")
     @Operation(
         summary = "上传文档文件",
-        description = "上传多种格式的文档文件（PDF、Word、Excel、TXT等），系统会自动解析文档内容并存储到向量数据库"
+        description = "上传多种格式的文档文件（PDF、Word、Excel、TXT等），系统会自动解析文档内容并存储到向量数据库。支持指定知识库"
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -188,10 +211,14 @@ public class DocumentController {
             @Parameter(description = "文档分块大小，默认1000字符", example = "1000")
             @RequestParam(required = false) Integer chunkSize,
             @Parameter(description = "文档元数据（JSON格式）", example = "{\"author\": \"张三\", \"category\": \"技术文档\"}")
-            @RequestParam(required = false) String metadata) throws IOException {
+            @RequestParam(required = false) String metadata,
+            @Parameter(description = "知识库ID，不指定则使用默认知识库")
+            @RequestParam(required = false) String knowledgeBaseId) throws IOException {
 
         String filename = file.getOriginalFilename();
-        log.info("Received file upload request: {}, size: {} bytes", filename, file.getSize());
+        String kbId = resolveKbId(knowledgeBaseId);
+        log.info("Received file upload request: {}, size: {} bytes, knowledgeBaseId: {}",
+                filename, file.getSize(), kbId);
 
         if (file.isEmpty()) {
             throw new IllegalArgumentException("File cannot be empty");
@@ -210,6 +237,7 @@ public class DocumentController {
         metadataMap.put("filename", filename);
         metadataMap.put("contentType", file.getContentType());
         metadataMap.put("fileSize", file.getSize());
+        metadataMap.put("knowledgeBaseId", kbId);
         if (metadata != null && !metadata.isEmpty()) {
             metadataMap.put("customMetadata", metadata);
         }
@@ -235,7 +263,8 @@ public class DocumentController {
                 .message("File uploaded and processed successfully")
                 .build();
 
-        log.info("File processed successfully: {} chunks inserted", documentIds.size());
+        log.info("File processed successfully: {} chunks inserted to knowledge base: {}",
+                documentIds.size(), kbId);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -243,7 +272,7 @@ public class DocumentController {
     @PostMapping("/upload/batch")
     @Operation(
         summary = "批量上传文档文件",
-        description = "批量上传多个文档文件，系统会自动解析所有文档内容并存储到向量数据库"
+        description = "批量上传多个文档文件，系统会自动解析所有文档内容并存储到向量数据库。支持指定知识库"
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -266,9 +295,12 @@ public class DocumentController {
             @Parameter(description = "上传的文档文件列表", required = true)
             @RequestParam("files") MultipartFile[] files,
             @Parameter(description = "文档分块大小，默认1000字符", example = "1000")
-            @RequestParam(required = false) Integer chunkSize) throws IOException {
+            @RequestParam(required = false) Integer chunkSize,
+            @Parameter(description = "知识库ID，不指定则使用默认知识库")
+            @RequestParam(required = false) String knowledgeBaseId) throws IOException {
 
-        log.info("Received batch file upload request: {} files", files.length);
+        String kbId = resolveKbId(knowledgeBaseId);
+        log.info("Received batch file upload request: {} files, knowledgeBaseId: {}", files.length, kbId);
 
         List<FileUploadResponse> responses = new ArrayList<>();
 
@@ -293,6 +325,7 @@ public class DocumentController {
                 metadataMap.put("filename", filename);
                 metadataMap.put("contentType", file.getContentType());
                 metadataMap.put("fileSize", file.getSize());
+                metadataMap.put("knowledgeBaseId", kbId);
 
                 // 解析文件并分块
                 List<Document> documents = documentParserService.parseDocumentToChunks(file, actualChunkSize, metadataMap);
@@ -317,7 +350,8 @@ public class DocumentController {
                         .build();
 
                 responses.add(response);
-                log.info("File processed successfully: {} - {} chunks inserted", filename, documentIds.size());
+                log.info("File processed successfully: {} - {} chunks inserted to knowledge base: {}",
+                        filename, documentIds.size(), kbId);
 
             } catch (Exception e) {
                 log.error("Error processing file: {}", file.getOriginalFilename(), e);
@@ -327,5 +361,48 @@ public class DocumentController {
         log.info("Batch upload completed: {} files processed", responses.size());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(responses);
+    }
+
+    @GetMapping
+    @Operation(
+        summary = "列出知识库中的文档",
+        description = "列出指定知识库中的文档分块列表，支持分页"
+    )
+    public ResponseEntity<SearchResponse> listDocuments(
+            @Parameter(description = "知识库ID，不指定则使用默认知识库")
+            @RequestParam(required = false) String knowledgeBaseId,
+            @Parameter(description = "返回结果数量，范围1-200", example = "50")
+            @RequestParam(required = false, defaultValue = "50")
+            @Min(value = 1, message = "limit must be at least 1")
+            @Max(value = 200, message = "limit cannot exceed 200") Integer limit) {
+
+        String kbId = resolveKbId(knowledgeBaseId);
+        log.info("Listing documents for knowledge base: {}, limit: {}", kbId, limit);
+
+        String filterExpression = "knowledgeBaseId == '%s'".formatted(kbId);
+
+        // 使用宽泛查询 + filterExpression 获取该知识库下的文档
+        SearchRequest searchRequest = SearchRequest.builder()
+                .query("document text content information")
+                .topK(limit)
+                .filterExpression(filterExpression)
+                .build();
+        List<Document> docs = vectorStore.similaritySearch(searchRequest);
+
+        List<SearchResult> results = docs.stream()
+                .map(doc -> SearchResult.builder()
+                        .id(doc.getId())
+                        .content(doc.getText())
+                        .metadata(doc.getMetadata())
+                        .build())
+                .collect(Collectors.toList());
+
+        SearchResponse response = SearchResponse.builder()
+                .results(results)
+                .build();
+
+        log.info("Found {} documents in knowledge base: {}", results.size(), kbId);
+
+        return ResponseEntity.ok(response);
     }
 }
