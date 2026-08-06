@@ -1,13 +1,14 @@
 spring:
   application:
     name: chat
+  config:
+    import: optional:file:../local-config.yaml,optional:file:./local-config.yaml
   ai:
     openai:
-      api-key: ${OPENAI_API_KEY}
-      base-url: ${OPENAI_BASE_URL}
+      api-key: ${deepseek.api-key}
+      base-url: ${deepseek.base-url}
       chat:
-        options:
-          model: gpt-5.4
+        model: ${deepseek.chat-model}
 server:
   port: 8096
 springdoc:

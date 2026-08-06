@@ -1,6 +1,6 @@
 package org.aeryzhao.mcpserver.comment;
 
-import org.springaicommunity.mcp.annotation.McpResource;
+import org.springframework.ai.mcp.annotation.McpResource;
 import org.springframework.stereotype.Component;
 
 /**

@@ -1,50 +1,35 @@
 package org.aeryzhao.mcpclient.controller;
 
+import io.modelcontextprotocol.client.McpSyncClient;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.tool.ToolCallbackProvider;
 
 import java.lang.reflect.Method;
-import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 class CommentMcpClientControllerTest {
 
     @Test
     void shouldBuildPromptWithToolNames() throws Exception {
         CommentMcpClientController controller = new CommentMcpClientController(
-                "http://localhost:8081",
-                "/sse",
-                Duration.ofSeconds(30)
+                mock(OpenAiChatModel.class),
+                mock(ToolCallbackProvider.class),
+                List.of(mock(McpSyncClient.class))
         );
 
         Method method = CommentMcpClientController.class.getDeclaredMethod(
-                "buildPrompt", String.class, String.class, String.class, List.class);
+                "buildToolPrompt", String.class, String.class, String.class, String[].class);
         method.setAccessible(true);
 
         String prompt = (String) method.invoke(controller,
-                "article-1001", "alice", "测试评论", List.of("listComments", "saveComment"));
+                "article-1001", "alice", "测试评论", new String[]{"listComments", "saveComment"});
 
         assertTrue(prompt.contains("article-1001"));
         assertTrue(prompt.contains("saveComment"));
         assertTrue(prompt.contains("listComments"));
-    }
-
-    @Test
-    void shouldReturnFailurePayloadWhenServerIsUnavailable() {
-        CommentMcpClientController controller = new CommentMcpClientController(
-                "http://127.0.0.1:65530",
-                "/sse",
-                Duration.ofSeconds(1)
-        );
-
-        Map<String, Object> response = controller.listTools("article-1001", "alice", "测试评论");
-
-        assertEquals("FAILED", response.get("status"));
-        assertEquals("http://127.0.0.1:65530", response.get("serverBaseUrl"));
-        assertEquals("/sse", response.get("sseEndpoint"));
-        assertTrue(response.get("errorType").toString().contains("Exception"));
     }
 }

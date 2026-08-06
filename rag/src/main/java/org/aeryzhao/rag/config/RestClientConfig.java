@@ -1,31 +1,33 @@
 package org.aeryzhao.rag.config;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.boot.web.client.RestClientCustomizer;
+import org.springframework.boot.restclient.RestClientCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
+import tools.jackson.databind.json.JsonMapper;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
 public class RestClientConfig {
 
     @Bean
-    public RestClientCustomizer restClientCustomizer(ObjectMapper objectMapper) {
+    public RestClientCustomizer restClientCustomizer(JsonMapper objectMapper) {
         return builder -> builder.messageConverters(converters -> customizeJacksonConverters(converters, objectMapper));
     }
 
-    private void customizeJacksonConverters(List<HttpMessageConverter<?>> converters, ObjectMapper objectMapper) {
-        ObjectMapper safeMapper = objectMapper.copy()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
+    private void customizeJacksonConverters(List<HttpMessageConverter<?>> converters, JsonMapper objectMapper) {
+        List<HttpMessageConverter<?>> updated = new ArrayList<>();
         for (HttpMessageConverter<?> converter : converters) {
-            if (converter instanceof MappingJackson2HttpMessageConverter jacksonConverter) {
-                jacksonConverter.setObjectMapper(safeMapper);
+            if (converter instanceof JacksonJsonHttpMessageConverter) {
+                updated.add(new JacksonJsonHttpMessageConverter(objectMapper));
+            } else {
+                updated.add(converter);
             }
         }
+        converters.clear();
+        converters.addAll(updated);
     }
 }

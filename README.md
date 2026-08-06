@@ -2,7 +2,7 @@
 
 > 面向新手的可运行示例与讲解，覆盖：Chat、提示词、结构化输出、聊天记忆（入门/自定义）、工具调用、MCP Client/Server。
 >
-> 代码以 Spring AI `1.1.x` 风格的 [`ChatClient`](chat/src/main/java/org/aeryzhao/chat/controller/ChatClientController.java:4) 为主线，配合 Swagger 进行接口调试。
+> 代码以 Spring AI `2.0.x` + Spring Boot 4.1 风格的 [`ChatClient`](chat/src/main/java/org/aeryzhao/chat/controller/ChatClientController.java:4) 为主线，配合 Swagger 进行接口调试。
 
 ## 目录
 
@@ -31,9 +31,11 @@
 
 ## 快速开始
 
-1. 准备环境变量（以 OpenAI 为例，具体以你的模型供应商为准）：
-   - `OPENAI_API_KEY`（必需）
-   - 以及 `base-url`、`model` 等配置（见各模块的 `application.yaml`）
+1. 配置模型（默认使用 DeepSeek，无需设置环境变量）：
+   - 项目根目录的 [`local-config.yaml`](local-config.yaml) 为本地配置（已被 `.gitignore` 忽略，不会提交到 Git）
+   - 若该文件不存在，先复制模板：`cp local-config.example.yaml local-config.yaml`
+   - 将文件中的 `deepseek.api-key` 替换为你自己的 DeepSeek API Key 即可
+   - 默认 `base-url=https://api.deepseek.com`、`chat-model=deepseek-chat`，如需修改直接编辑该文件
 
 2. 启动模块：
    - 启动 `chat`：入口 [`ChatApplication`](chat/src/main/java/org/aeryzhao/chat/ChatApplication.java:1)

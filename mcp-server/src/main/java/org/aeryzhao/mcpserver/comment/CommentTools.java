@@ -1,6 +1,6 @@
 package org.aeryzhao.mcpserver.comment;
 
-import org.springaicommunity.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;

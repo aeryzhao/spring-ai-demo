@@ -28,8 +28,8 @@ public class SwaggerConfig {
                                 "- **语义搜索**: 基于向量相似度的文档检索\n" +
                                 "- **RAG问答**: 结合检索和生成的智能问答系统\n\n" +
                                 "## 技术栈\n\n" +
-                                "- Spring Boot 3.2.5\n" +
-                                "- Spring AI\n" +
+                                "- Spring Boot 4.1.0\n" +
+                                "- Spring AI 2.0.0\n" +
                                 "- Milvus Vector Database\n" +
                                 "- OpenAI Embeddings")
                         .version("1.0.0")

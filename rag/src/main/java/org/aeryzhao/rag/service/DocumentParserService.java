@@ -42,7 +42,8 @@ public class DocumentParserService {
                 chunkSize / 8,  // min chunk size
                 5,              // min chunk length in tokens
                 10000,          // max num chunks
-                true            // keep separator
+                true,           // keep separator
+                List.of('.', '?', '!', '\n')  // 默认标点分隔符
         );
 
         List<Document> documents = splitter.apply(List.of(new Document(UUID.randomUUID().toString(), content, Map.of())));

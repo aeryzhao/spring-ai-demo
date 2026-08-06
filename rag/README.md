@@ -20,13 +20,15 @@
 ## 技术栈
 
 - **Java 21**
-- **Spring Boot 3.4.13**
-- **Spring AI 1.1.2** - AI 集成框架
-  - `spring-ai-starter-model-ollama` - Ollama Chat + Embedding 模型
+- **Spring Boot 4.1.0**
+- **Spring AI 2.0.0** - AI 集成框架
+  - `spring-ai-starter-model-openai` - DeepSeek Chat 模型（OpenAI 兼容接口）
+  - `spring-ai-starter-model-ollama` - Ollama Embedding 模型
   - `spring-ai-starter-vector-store-milvus` - Milvus 向量存储
-  - `spring-ai-advisors-vector-store` - QuestionAnswerAdvisor
+  - `spring-ai-vector-store-advisor` - QuestionAnswerAdvisor
 - **Milvus** - 向量数据库
-- **Ollama（本地部署）** - Chat 模型（默认 `gemma4:latest`）+ Embedding 模型（默认 `qwen3-embedding`）
+- **Ollama（本地部署）** - Embedding 模型（默认 `qwen3-embedding`）
+- **DeepSeek** - Chat 模型（默认 `deepseek-chat`，API Key 配置在项目根目录的 `local-config.yaml`，该文件不入库）
 - **Apache PDFBox / POI** - 文档解析（PDF、Word、Excel）
 - **Lombok** - 简化代码
 
@@ -56,15 +58,14 @@ docker run -d --name milvus-standalone \
 
 2) 启动 Ollama 服务（默认监听 `http://127.0.0.1:11434`）
 
-3) 拉取项目默认使用的模型：
+3) 拉取 Embedding 模型：
 
 ```bash
-# Chat 模型
-ollama pull gemma4:latest
-
 # Embedding 模型
 ollama pull qwen3-embedding
 ```
+
+> 说明：RAG 问答的 Chat 模型使用 DeepSeek（`deepseek-chat`），API Key 等模型配置统一放在项目根目录的 `local-config.yaml` 中（该文件已被 `.gitignore` 忽略），无需设置环境变量。
 
 ### 3. 启动应用
 
@@ -191,10 +192,12 @@ rag/
 | 配置项 | 说明 | 默认值 |
 |--------|------|--------|
 | `server.port` | 应用端口 | 8080 |
+| `spring.ai.openai.base-url` | DeepSeek 服务地址 | https://api.deepseek.com |
+| `spring.ai.openai.chat.model` | Chat 模型 | deepseek-chat |
+| `spring.ai.openai.api-key` | DeepSeek API Key | 来自 `local-config.yaml` |
 | `spring.ai.ollama.base-url` | Ollama 服务地址 | http://127.0.0.1:11434 |
-| `spring.ai.ollama.chat.options.model` | Chat 模型 | gemma4:latest |
-| `spring.ai.ollama.embedding.options.model` | Embedding 模型 | qwen3-embedding |
-| `spring.ai.vectorstore.milvus.uri` | Milvus 地址 | http://localhost:19530 |
+| `spring.ai.ollama.embedding.model` | Embedding 模型 | qwen3-embedding |
+| `spring.ai.vectorstore.milvus.client.uri` | Milvus 地址 | http://localhost:19530 |
 | `spring.ai.vectorstore.milvus.collection-name` | 集合名称 | rag_documents |
 | `spring.ai.vectorstore.milvus.embedding-dimension` | 向量维度 | 4096 |
 | `spring.ai.vectorstore.milvus.metric-type` | 相似度度量 | COSINE |
@@ -215,7 +218,7 @@ RAG 问答 → VectorStore.similaritySearch()（检索相关文档）
 
 ## 注意事项
 
-1. **模型服务**：本项目默认使用本地 Ollama。Chat 模型为 `gemma4:latest`，Embedding 模型为 `qwen3-embedding`。如需更换模型，请同步修改 `application.yml` 中的对应配置。
+1. **模型服务**：Chat 模型使用 DeepSeek（`deepseek-chat`），Embedding 模型使用本地 Ollama（`qwen3-embedding`）。DeepSeek 的 `api-key`、`base-url`、`chat-model` 配置在项目根目录的 `local-config.yaml` 中（不入库）；如需更换模型，请同步修改该文件与 `application.yml` 中的对应配置。
 
 2. **Milvus 连接**：确保 Milvus 服务已启动并可访问。首次启动时 Spring AI 会自动创建集合（需配置 `initialize-schema: true`）。
 

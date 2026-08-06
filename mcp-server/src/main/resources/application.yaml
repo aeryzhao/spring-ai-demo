@@ -15,9 +15,10 @@ spring:
         version: 1.0.0
         type: SYNC
         instructions: 操作评论 MCP
-        sse-endpoint: /sse
-        sse-message-endpoint: /mcp/messages
-        keep-alive-interval: 30s
+        protocol: STREAMABLE
+        streamable-http:
+          mcp-endpoint: /mcp
+          keep-alive-interval: 30s
         annotation-scanner:
           enabled: true
 

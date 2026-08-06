@@ -5,21 +5,31 @@ spring:
   application:
     name: rag-project
 
+  config:
+    import: optional:file:../local-config.yaml,optional:file:./local-config.yaml
+
   ai:
-    ollama:
-      base-url: ${OLLAMA_BASE_URL:http://127.0.0.1:11434}
+    model:
+      chat: openai
+      embedding: ollama
+
+    openai:
+      api-key: ${deepseek.api-key}
+      base-url: ${deepseek.base-url}
       chat:
-        options:
-          model: ${OLLAMA_CHAT_MODEL:gemma4:latest}
-          temperature: 0.7
+        model: ${deepseek.chat-model}
+        temperature: 0.7
+
+    ollama:
+      base-url: ${ollama.base-url:http://127.0.0.1:11434}
       embedding:
-        options:
-          model: qwen3-embedding
+        model: ${ollama.embedding-model:qwen3-embedding}
 
     vectorstore:
       type: milvus
       milvus:
-        uri: http://localhost:19530
+        client:
+          uri: http://localhost:19530
         collection-name: rag_documents
         index-type: IVF_FLAT
         metric-type: COSINE

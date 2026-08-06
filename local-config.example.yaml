@@ -1,0 +1,13 @@
+# 本地模型配置模板
+# 使用方式：复制本文件为 local-config.yaml 并填写你自己的 API Key
+#   cp local-config.example.yaml local-config.yaml
+# local-config.yaml 已被 .gitignore 忽略，不会提交到 Git
+
+deepseek:
+  api-key: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  base-url: https://api.deepseek.com
+  chat-model: deepseek-chat
+
+ollama:
+  base-url: http://127.0.0.1:11434
+  embedding-model: qwen3-embedding
