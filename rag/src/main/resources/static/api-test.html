@@ -4,7 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RAG 知识问答助手</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png">
   <style>
     :root {
       --ink: #0f172a;
@@ -63,6 +66,12 @@
     .sidebar-spacer{flex:1}
     .sidebar-stat{padding:10px 16px;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink-muted)}
     .sidebar-stat .dot{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 6px rgba(5,150,105,.4);animation:pulse-dot 2s ease-in-out infinite}
+
+    /* mobile bottom nav */
+    .mob-nav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--card-glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:4px 6px calc(4px + env(safe-area-inset-bottom));justify-content:space-around;box-shadow:0 -4px 12px rgba(15,23,42,.06)}
+    .mob-nav .sidebar-item{flex-direction:column;gap:3px;padding:6px 4px;font-size:10px;justify-content:center}
+    .mob-nav .sidebar-item svg{width:20px;height:20px}
+    .mob-nav .sidebar-item span{display:block;line-height:1.2}
 
     .content{flex:1;overflow:auto;padding:28px;display:flex;flex-direction:column;gap:20px;background:linear-gradient(180deg,var(--bg) 0%,var(--bg-subtle) 100%)}
     .page{display:none;flex-direction:column;gap:20px;flex:1}
@@ -148,6 +157,30 @@
     .msg{max-width:min(85%,700px);border-radius:var(--radius);padding:12px 16px;display:grid;gap:6px;animation:pop .25s ease-out}
     .msg .role{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
     .msg .text{font-size:13px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+    .msg-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+    .msg-copy{border:none;background:none;color:var(--ink-muted);font-size:11px;cursor:pointer;padding:2px 8px;border-radius:6px;opacity:0;transition:all .2s ease}
+    .msg:hover .msg-copy,.msg-copy:focus-visible{opacity:1}
+    .msg-copy:hover{color:var(--brand-dark);background:var(--brand-light)}
+    @media(hover:none){.msg-copy{opacity:1}}
+    .msg .text.md{white-space:normal;width:100%;overflow-wrap:break-word}
+
+    /* markdown rendering */
+    .md{font-size:13px;line-height:1.7;overflow-wrap:break-word}
+    .md h1,.md h2,.md h3,.md h4{margin:10px 0 6px;font-weight:700;letter-spacing:-0.01em;line-height:1.4}
+    .md h1{font-size:17px}.md h2{font-size:16px}.md h3{font-size:15px}.md h4{font-size:14px}
+    .md p{margin:6px 0}
+    .md ul,.md ol{margin:6px 0;padding-left:22px}
+    .md li{margin:2px 0}
+    .md blockquote{margin:8px 0;padding:6px 12px;border-left:3px solid var(--brand-soft);background:var(--brand-light);border-radius:0 var(--radius-xs) var(--radius-xs) 0;color:var(--ink-soft)}
+    .md a{color:var(--brand-dark);text-decoration:underline;text-underline-offset:2px}
+    .md hr{border:none;border-top:1px solid var(--line);margin:12px 0}
+    .md pre{background:#0f172a;color:#e2e8f0;border-radius:var(--radius-xs);padding:12px 14px;overflow:auto;font-family:var(--mono);font-size:12px;line-height:1.6;margin:8px 0;white-space:pre}
+    .md code{font-family:var(--mono);font-size:12px}
+    .md :not(pre)>code{background:var(--brand-light);color:var(--brand-dark);padding:2px 6px;border-radius:6px}
+    .md .md-lang{display:block;font-size:10px;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
+    .md table{border-collapse:collapse;margin:8px 0;font-size:12px}
+    .md th,.md td{border:1px solid var(--line);padding:6px 10px;text-align:left}
+    .md th{background:var(--bg-subtle);font-weight:600}
     .msg.user{align-self:flex-end;background:var(--gradient-brand);color:#fff;border:none;box-shadow:0 2px 8px rgba(13,148,136,.2)}
     .msg.user .role{color:rgba(255,255,255,.8)}
     .msg.user .text{color:#fff}
@@ -240,6 +273,8 @@
     }
     @media(max-width:640px){
       .sidebar{display:none}
+      .mob-nav{display:flex}
+      .main-wrap{padding-bottom:62px}
       .topbar{padding:0 14px;height:48px}
       .topbar-sep{display:none}
       .content{padding:12px}
@@ -347,7 +382,7 @@
             <input id="uploadFiles" type="file" multiple style="display:none" />
           </div>
           <div class="row" style="margin-top:10px">
-            <div class="field"><label for="uploadChunkSize">分块大小</label><input id="uploadChunkSize" type="number" min="1" placeholder="默认 1000" /></div>
+            <div class="field"><label for="uploadChunkSize">分块大小</label><input id="uploadChunkSize" type="number" min="1" placeholder="默认 2000" /></div>
             <div class="field"><label for="uploadMetadata">metadata（仅单文件）</label><input id="uploadMetadata" type='text' placeholder='{"author":"张三"}' /></div>
             <div style="flex:0"><button id="uploadBtn" class="btn-primary btn-sm" type="button">上传</button></div>
           </div>
@@ -513,6 +548,12 @@
     }
 
     /* ---- nav ---- */
+    function buildMobNav(){
+      var nav=document.createElement('nav');nav.className='mob-nav';nav.setAttribute('aria-label','页面导航');
+      document.querySelectorAll('.sidebar-item[data-page]').forEach(function(b){nav.appendChild(b.cloneNode(true))});
+      document.body.appendChild(nav);
+    }
+
     function switchPage(name){
       state.currentPage=name;saveState();
       document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active')});
@@ -802,13 +843,91 @@
     }
 
     /* ---- chat ---- */
+    function copyText(txt){
+      function fallback(){
+        var ta=document.createElement('textarea');ta.value=txt;ta.style.cssText='position:fixed;left:-9999px;top:0;opacity:0';document.body.appendChild(ta);ta.select();
+        try{document.execCommand('copy');toast('已复制','ok',1200)}catch(e){toast('复制失败，请手动选择文本','err',1800)}
+        ta.remove();
+      }
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(function(){toast('已复制','ok',1200)},fallback)}else fallback();
+    }
+
+    function mdToHtml(src){
+      if(src==null)return'';
+      var esc=String(src).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      var lines=esc.split('\n'),out=[],i=0,listType='',listBuf=[];
+      function flushList(){if(listType){out.push('<'+listType+'>'+listBuf.join('')+'</'+listType+'>');listBuf=[];listType=''}}
+      function inline(t){
+        return t
+          .replace(/`([^`]+)`/g,'<code>$1</code>')
+          .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+          .replace(/__([^_]+)__/g,'<strong>$1</strong>')
+          .replace(/(^|[^*])\*([^*\n]+)\*/g,'$1<em>$2</em>')
+          .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+      }
+      while(i<lines.length){
+        var line=lines[i];
+        var fm=line.match(/^```(\w*)\s*$/);
+        if(fm){
+          i++;var buf=[],lang=fm[1];
+          while(i<lines.length&&!/^```\s*$/.test(lines[i])){buf.push(lines[i]);i++}
+          i++;
+          out.push('<pre><code>'+(lang?'<span class="md-lang">'+lang+'</span>':'')+buf.join('\n')+'</code></pre>');
+          continue;
+        }
+        var hm=line.match(/^(#{1,4})\s+(.*)$/);
+        if(hm){flushList();out.push('<h'+(hm[1].length+1)+'>'+inline(hm[2])+'</h'+(hm[1].length+1)+'>');i++;continue}
+        if(/^(-{3,}|\*{3,}|_{3,})$/.test(line)){flushList();out.push('<hr/>');i++;continue}
+        if(/^&gt;\s?/.test(line)){
+          flushList();var q=[];
+          while(i<lines.length&&/^&gt;\s?/.test(lines[i])){q.push(lines[i].replace(/^&gt;\s?/,''));i++}
+          out.push('<blockquote>'+q.map(inline).join('<br/>')+'</blockquote>');
+          continue;
+        }
+        var lm=line.match(/^(\s*)([-*+]|\d+\.)\s+(.*)$/);
+        if(lm){
+          var ol=/^\d+\.$/.test(lm[2]),t=ol?'ol':'ul';
+          if(listType!==t){flushList();listType=t}
+          listBuf.push('<li>'+inline(lm[3])+'</li>');i++;continue;
+        }
+        flushList();
+        if(!line.trim()){out.push('');i++;continue}
+        var para=[];
+        while(i<lines.length&&lines[i].trim()&&!/^```|^#{1,4}\s/.test(lines[i])&&!/^(\s*)([-*+]|\d+\.)\s+/.test(lines[i])&&!/^&gt;/.test(lines[i])&&!/^(-{3,}|\*{3,}|_{3,})$/.test(lines[i])){para.push(lines[i]);i++}
+        out.push('<p>'+para.map(inline).join('<br/>')+'</p>');
+      }
+      flushList();
+      return out.join('\n');
+    }
+
     function addMsg(role,content){
       var list=$$('chatList'),wrap=document.createElement('article');wrap.className='msg '+role;
+      var head=document.createElement('div');head.className='msg-head';
       var r=document.createElement('p');r.className='role';r.textContent=role==='user'?'你':(role==='assistant'?'知识助手':'系统');
-      var t=document.createElement('p');t.className='text';if(typeof content==='string')t.textContent=content;else t.appendChild(content);
-      wrap.appendChild(r);wrap.appendChild(t);list.appendChild(wrap);list.scrollTop=list.scrollHeight;return wrap;
+      head.appendChild(r);
+      if(role==='assistant'&&typeof content==='string'){
+        var cb=document.createElement('button');cb.type='button';cb.className='msg-copy';cb.textContent='复制';
+        cb.addEventListener('click',function(){copyText(content)});
+        head.appendChild(cb);
+      }
+      wrap.appendChild(head);
+      if(typeof content==='string'){
+        if(role==='assistant'){
+          var md=document.createElement('div');md.className='text md';md.innerHTML=mdToHtml(content);wrap.appendChild(md);
+        }else{
+          var t=document.createElement('p');t.className='text';t.textContent=content;wrap.appendChild(t);
+        }
+      }else{
+        var t2=document.createElement('p');t2.className='text';t2.appendChild(content);wrap.appendChild(t2);
+      }
+      list.appendChild(wrap);list.scrollTop=list.scrollHeight;return wrap;
     }
     function typingNode(){var s=document.createElement('span');s.className='typing';s.innerHTML='<span></span><span></span><span></span>';return s}
+
+    function autoSize(ta){
+      ta.style.height='auto';
+      ta.style.height=Math.min(120,Math.max(44,ta.scrollHeight))+'px';
+    }
 
     function renderSources(msgEl,sources){
       if(!Array.isArray(sources)||!sources.length)return;
@@ -825,7 +944,37 @@
       msgEl.appendChild(box);
     }
 
-    function clearChat(){$$('chatList').innerHTML='';addMsg('system','欢迎使用知识问答助手。请先选择知识库并上传文档，然后开始提问。')}
+    var CHAT_KEY='rag-c-chat';
+    function saveChat(){
+      var msgs=[];
+      $$('chatList').querySelectorAll('.msg').forEach(function(m){
+        var role=m.classList.contains('user')?'user':(m.classList.contains('assistant')?'assistant':'system');
+        if(role==='system')return;
+        var text=m.querySelector('.text');if(!text)return;
+        var sources=[];
+        m.querySelectorAll('.source-item-text').forEach(function(s){sources.push(s.textContent)});
+        msgs.push({role:role,content:text.textContent,sources:sources});
+      });
+      msgs=msgs.slice(-60);
+      try{localStorage.setItem(CHAT_KEY,JSON.stringify(msgs))}catch(e){}
+    }
+    function loadChat(){
+      try{
+        var p=JSON.parse(localStorage.getItem(CHAT_KEY)||'[]');
+        if(!Array.isArray(p)||!p.length)return false;
+        p.forEach(function(m){
+          if(!m||typeof m!=='object')return;
+          var msg=addMsg(m.role==='user'?'user':'assistant',String(m.content||''));
+          if(Array.isArray(m.sources)&&m.sources.length)renderSources(msg,m.sources);
+        });
+        return true;
+      }catch(e){return false}
+    }
+    function clearChat(){
+      $$('chatList').innerHTML='';
+      try{localStorage.removeItem(CHAT_KEY)}catch(e){}
+      addMsg('system','欢迎使用知识问答助手。请先选择知识库并上传文档，然后开始提问。');
+    }
 
     async function handleAsk(){
       var btn=$$('askBtn');
@@ -833,7 +982,7 @@
         var q=$$('questionInput').value.trim();if(!q)throw new Error('请输入问题');
         var topK=+$$('askTopK').value||3;if(topK<1||topK>20)throw new Error('topK 1-20');
         var kId=kbId();
-        addMsg('user',q);$$('questionInput').value='';
+        addMsg('user',q);$$('questionInput').value='';autoSize($$('questionInput'));saveChat();
         var typing=addMsg('assistant',typingNode());
         setLoading(btn,true,'生成中...');setStatus('askStatus','检索知识库并生成回答...','');
         var res=await req('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q,topK:topK,knowledgeBaseId:kId})});
@@ -841,6 +990,7 @@
         var answer=(res.body&&typeof res.body.answer==='string')?res.body.answer:'系统未返回答案';
         var msg=addMsg('assistant',answer);
         renderSources(msg,res.body&&res.body.sources);
+        saveChat();
         state.lastQuestion=now();saveState();
         setStatus('askStatus','完成（'+res.ms+'ms）','ok');
       }catch(e){addMsg('system',e.message);setStatus('askStatus',e.message,'err');toast(e.message,'err',2600)}finally{setLoading(btn,false)}
@@ -849,6 +999,7 @@
     /* ---- init ---- */
     function init(){
       loadBase();loadState();
+      buildMobNav();
       document.querySelectorAll('.sidebar-item[data-page]').forEach(function(b){b.addEventListener('click',function(){switchPage(b.dataset.page)})});
       switchPage(state.currentPage||'kb');
 
@@ -874,12 +1025,13 @@
       $$('clearChatBtn').addEventListener('click',clearChat);
       $$('fillDemoBtn').addEventListener('click',function(){$$('questionInput').value='请根据知识库内容，总结产品售后流程并列出关键步骤。';$$('questionInput').focus()});
       $$('questionInput').addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&e.key==='Enter')handleAsk()});
+      $$('questionInput').addEventListener('input',function(){autoSize($$('questionInput'))});
 
       $$('baseUrl').addEventListener('change',saveBase);$$('baseUrl').addEventListener('blur',saveBase);
       $$('pingBtn').addEventListener('click',async function(){var b=$$('pingBtn');try{setLoading(b,true,'检测中...');await req('/v3/api-docs');toast('连接成功','ok')}catch(e){toast('失败：'+e.message,'err',2800)}finally{setLoading(b,false)}});
       $$('clearDebugBtn').addEventListener('click',function(){$$('debugLog').textContent='暂无请求'});
 
-      loadKbs();renderHistory();clearChat();
+      loadKbs();renderHistory();if(!loadChat())clearChat();
     }
     init();
   })();
