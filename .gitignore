@@ -33,3 +33,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# langchain4j 模块本地 Maven 缓存
+langchain4j/.m2-repo/

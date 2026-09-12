@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: langchain4j
+  config:
+    import: optional:file:../local-config.yaml,optional:file:./local-config.yaml
+
+server:
+  port: 8097
+
+# ------------------------------------------------------------------
+# LangChain4j 模型配置
+#   provider=openai → 走 OpenAI 兼容接口（读取根目录 local-config.yaml 里的 DeepSeek 配置）
+#   provider=ollama → 走本地 Ollama，无需 API Key
+# 两种模式都支持，改 provider 即可切换，业务代码零改动。
+# ------------------------------------------------------------------
+langchain4j:
+  provider: openai
+  api-key: ${deepseek.api-key}
+  base-url: ${deepseek.base-url}
+  chat-model: ${deepseek.chat-model}
+  embedding-model: text-embedding-v3
+  temperature: 0.7
+  timeout: 60s
+  log-requests: false
+  log-responses: false
+
+logging:
+  level:
+    org.aeryzhao.langchain4j: INFO
+    # 打开可以看到 LangChain4j 发出的完整 HTTP 报文，排查问题利器
+    dev.langchain4j: INFO

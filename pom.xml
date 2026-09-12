@@ -16,6 +16,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>chat</module>
+        <module>langchain4j</module>
         <module>mcp-client</module>
         <module>mcp-server</module>
         <module>rag</module>

@@ -26,6 +26,7 @@
 - `mcp-server/`：MCP Server（提供工具/资源/提示词）
 - `mcp-client/`：MCP Client（连接 MCP Server，并把 MCP 工具注入到 Spring AI 的工具回调体系）
 - `rag/`：RAG 示例（文档入库、向量检索、基于检索结果生成回答）
+- `langchain4j/`：**LangChain4j 示例**（与 `chat/` 对应的另一套实现，用于对比学习，见 [`langchain4j/README.md`](langchain4j/README.md:1)）
 
 对应待办：[`TODOLIST.md`](TODOLIST.md:1)
 

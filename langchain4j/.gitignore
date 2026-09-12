@@ -1,0 +1,2 @@
+# 本地 Maven 依赖缓存（由 settings.xml 指定，体积大，不提交）
+.m2-repo/
