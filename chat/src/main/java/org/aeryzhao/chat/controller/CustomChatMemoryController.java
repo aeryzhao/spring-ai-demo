@@ -1,6 +1,8 @@
 package org.aeryzhao.chat.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.aeryzhao.chat.repository.ConcurrentMapChatMemoryRepository;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -22,6 +24,7 @@ import java.util.List;
  * @author zhaoxg
  * @date 2026/3/17 21:28
  */
+@Tag(name = "聊天记忆（自定义仓库）", description = "使用自定义 ConcurrentMapChatMemoryRepository 演示记忆的读写与清理，并提供查看、统计、清空会话记忆的辅助接口")
 @RequestMapping("/ai/chat-memory/custom")
 @RestController
 public class CustomChatMemoryController {
@@ -44,9 +47,20 @@ public class CustomChatMemoryController {
                 .build();
     }
 
-    @Operation(summary = "使用自定义仓库进行多轮对话")
+    @Operation(summary = "使用自定义仓库进行多轮对话",
+            description = """
+                    与「聊天记忆（内存仓库）」能力相同，但底层换成模块自实现的 ConcurrentMapChatMemoryRepository，\
+                    用于演示如何把记忆存储替换成自己的实现（例如换成 Redis、数据库）。
+
+                    同一 `conversationId` 下会保留最近 20 条消息作为上下文，可配合本组件的 `/memory-size`、\
+                    `/memory`、`/clear` 接口观察与清理记忆。该接口会真实调用 DeepSeek 模型。
+                    """)
     @GetMapping("/chat")
-    String chat(@RequestParam(value = "conversationId", defaultValue = "custom-session") String conversationId,
+    String chat(@Parameter(description = "会话 ID，用于隔离不同对话的上下文。默认值：custom-session",
+                           example = "custom-session-001")
+                @RequestParam(value = "conversationId", defaultValue = "custom-session") String conversationId,
+                @Parameter(description = "用户输入的问题或指令，默认值：我最喜欢的编程语言是Java，请记住",
+                           example = "我最喜欢的编程语言是Java，请记住")
                 @RequestParam(value = "userInput", defaultValue = "我最喜欢的编程语言是Java，请记住") String userInput) {
         return this.chatClient.prompt()
                 .system(DEFAULT_SYSTEM_PROMPT)
@@ -56,21 +70,43 @@ public class CustomChatMemoryController {
                 .content();
     }
 
-    @Operation(summary = "查看当前会话的记忆条数")
+    @Operation(summary = "查看当前会话的记忆条数",
+            description = """
+                    返回指定会话在自定义仓库中已保存的消息条数（不调用模型，纯本地查询）。
+
+                    常用于确认 `/chat` 是否成功写入了记忆，或在 `/clear` 之后验证记忆已被清空（应返回 0）。
+                    """)
     @GetMapping("/memory-size")
-    int memorySize(@RequestParam(value = "conversationId", defaultValue = "custom-session") String conversationId) {
+    int memorySize(@Parameter(description = "会话 ID，与 `/chat` 使用同一个 ID 才能查到对应记忆。默认值：custom-session",
+                             example = "custom-session-001")
+                   @RequestParam(value = "conversationId", defaultValue = "custom-session") String conversationId) {
         return this.chatMemoryRepository.findByConversationId(conversationId).size();
     }
 
-    @Operation(summary = "查看当前会话的记忆")
+    @Operation(summary = "查看当前会话的记忆",
+            description = """
+                    返回指定会话在自定义仓库中保存的完整消息列表，不调用模型，纯本地查询。
+
+                    响应元素为 Spring AI 的 `Message` 对象（含 messageType、text、metadata 等字段），\
+                    字段结构以实际响应为准；会话不存在时返回空数组。
+                    """)
     @GetMapping("/memory")
-    List<Message> memory(@RequestParam(value = "conversationId", defaultValue = "custom-session") String conversationId) {
+    List<Message> memory(@Parameter(description = "会话 ID，与 `/chat` 使用同一个 ID 才能查到对应记忆。默认值：custom-session",
+                                   example = "custom-session-001")
+                         @RequestParam(value = "conversationId", defaultValue = "custom-session") String conversationId) {
         return this.chatMemoryRepository.findByConversationId(conversationId);
     }
 
-    @Operation(summary = "清空指定会话的记忆")
+    @Operation(summary = "清空指定会话的记忆",
+            description = """
+                    删除指定会话在自定义仓库中的全部记忆（不调用模型，纯本地操作），返回一段中文提示文本。
+
+                    清空后该 `conversationId` 的多轮上下文即失效，可用 `/memory-size` 验证结果是否为 0；\
+                    仅影响当前会话，其他会话的记忆不受影响。
+                    """)
     @GetMapping("/clear")
-    String clear(@RequestParam(value = "conversationId", defaultValue = "custom-session") String conversationId) {
+    String clear(@Parameter(description = "要清空的会话 ID。默认值：custom-session", example = "custom-session-001")
+                 @RequestParam(value = "conversationId", defaultValue = "custom-session") String conversationId) {
         this.chatMemoryRepository.deleteByConversationId(conversationId);
         return "已清空会话记忆: " + conversationId;
     }

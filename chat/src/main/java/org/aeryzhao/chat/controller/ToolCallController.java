@@ -1,6 +1,8 @@
 package org.aeryzhao.chat.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.aeryzhao.chat.tool.TravelPlanTools;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @author zhaoxg
  * @date 2026/3/17 21:38
  */
+@Tag(name = "工具调用", description = "演示 Function Calling：模型根据用户意图自动调用本地 TravelPlanTools 工具，再基于工具结果整理回答")
 @RequestMapping("/ai/tool")
 @RestController
 public class ToolCallController {
@@ -31,10 +34,20 @@ public class ToolCallController {
                 .build();
     }
 
-    @Operation(summary = "基于带参数对象的工具调用生成旅游建议")
+    @Operation(summary = "基于带参数对象的工具调用生成旅游建议",
+            description = """
+                    演示工具（函数）调用：ChatClient 注册了 `TravelPlanTools` 作为默认工具，模型会根据用户消息判断\
+                    是否需要调用它，并把城市、天数、预算作为参数传入，最后基于工具返回结果整理成中文建议。
+
+                    与「工具调用（无参数）」不同，这里三个参数是真实传入工具的入参。参数值会先拼进提示词再交由模型决定调用；\
+                    该接口会真实调用 DeepSeek 模型，响应时间通常比普通对话更长（包含工具调用与二次生成两轮）。
+                    """)
     @GetMapping("/travel-plan")
-    String travelPlan(@RequestParam(value = "city", defaultValue = "杭州") String city,
+    String travelPlan(@Parameter(description = "旅行目的地城市，默认值：杭州", example = "杭州")
+                      @RequestParam(value = "city", defaultValue = "杭州") String city,
+                      @Parameter(description = "旅行天数（天），默认值：3", example = "3")
                       @RequestParam(value = "days", defaultValue = "3") int days,
+                      @Parameter(description = "总预算（元），默认值：3000", example = "3000")
                       @RequestParam(value = "budget", defaultValue = "3000") int budget) {
         return this.chatClient.prompt()
                 .system(DEFAULT_SYSTEM_PROMPT)

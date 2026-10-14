@@ -3,6 +3,9 @@ package org.aeryzhao.langchain4j.controller;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -24,6 +27,25 @@ import java.io.IOException;
  * <p>这里用 Spring MVC 的 {@link SseEmitter} 把回调桥接成浏览器可见的 SSE 流，
  * 这样用 curl 就能直接看到「一个字一个字吐出来」的效果。
  */
+@Tag(name = "2. 流式输出（SSE）", description = """
+        LangChain4j 的流式核心是**回调式**的：调用 `chat(...)` 时传入 `StreamingChatResponseHandler`，
+        框架在收到每个 token 时回调 `onPartialResponse`，结束时回调 `onCompleteResponse`
+        （对比 Spring AI 的 `Flux<String>` 响应式写法）。
+
+        本接口用 Spring MVC 的 `SseEmitter` 把回调桥接成 SSE 流，用 `curl -N` 即可看到逐字输出效果。
+
+        **SSE 事件约定**
+        | event | data |
+        | --- | --- |
+        | `token` | 单个增量 token 文本 |
+        | `done` | JSON：`{ "text": 完整文本, "totalTokens": N }` |
+        | `error` | 错误信息字符串 |
+
+        超时时间 120 秒，客户端断开连接属正常现象。
+
+        > **Swagger UI 支持有限**：Swagger UI 对 `text/event-stream` 的流式渲染不完整，
+        > 建议用命令行体验（见接口详情）。
+        """)
 @Slf4j
 @RestController
 @RequestMapping("/lc4j/stream")
@@ -37,8 +59,27 @@ public class StreamingChatController {
      *
      * <p>命令行体验：{@code curl -N "http://localhost:8097/lc4j/stream?message=写一首五言绝句"}
      */
+    @Operation(summary = "流式对话（SSE 逐字返回）", description = """
+            以 SSE（`text/event-stream`）方式流式返回模型输出，返回类型为 `SseEmitter`。
+
+            **命令行体验（推荐）**：
+
+            ```bash
+            curl -N "http://localhost:8097/lc4j/stream?message=写一首五言绝句"
+            ```
+
+            `-N` 关闭 curl 输出缓冲，才能实时看到逐字吐出的效果。
+
+            事件流：多个 `event: token`（增量文本）→ 一个 `event: done`（完整文本 + Token 总量）；
+            出错时推送 `event: error`。服务端超时时间 120 秒。
+
+            > **Swagger UI 支持有限**：Swagger UI 无法完整渲染 SSE 流式响应，
+            > 在本页点击 Execute 可能只能看到挂起或截断的结果，请以 `curl -N` 为准。
+            """)
     @GetMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter stream(@RequestParam(defaultValue = "用 30 个字介绍一下 LangChain4j") String message) {
+    public SseEmitter stream(
+            @Parameter(description = "要生成的提示词", example = "写一首五言绝句")
+            @RequestParam(defaultValue = "用 30 个字介绍一下 LangChain4j") String message) {
         // 超时时间给长一点，否则慢模型会被提前掐断
         SseEmitter emitter = new SseEmitter(120_000L);
 

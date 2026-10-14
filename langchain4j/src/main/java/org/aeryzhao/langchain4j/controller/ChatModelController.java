@@ -7,6 +7,9 @@ import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.output.TokenUsage;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,6 +32,18 @@ import java.util.Map;
  *   <li>{@code chat(List&lt;ChatMessage&gt;)}：多轮消息列表，注意此处<b>无状态</b>，历史需自己带上</li>
  * </ol>
  */
+@Tag(name = "1. ChatModel 基础对话",
+        description = """
+                `ChatModel` 处于 LangChain4j 的最底层（相当于 Spring AI 的 `ChatModel`）：
+                只负责「发消息、收消息」，不管理记忆、不组装工具。
+                理解它是理解后面所有高级能力（AiServices / 记忆 / 工具调用）的前提。
+
+                本组三个接口分别演示三种调用姿势：
+
+                1. `chat(String)`：最简写法，一行代码拿到字符串
+                2. `chat(ChatMessage...)`：自己拼装 System/User 消息，拿到完整 `ChatResponse`
+                3. `chat(List<ChatMessage>)`：多轮消息列表，注意此处**无状态**，历史需自己带上
+                """)
 @RestController
 @RequestMapping("/lc4j/chat")
 @RequiredArgsConstructor
@@ -41,8 +56,19 @@ public class ChatModelController {
      *
      * <p>GET /lc4j/chat/simple?message=你好
      */
+    @Operation(summary = "最简调用：字符串进、字符串出",
+            description = """
+                    演示 `chatModel.chat(String)` 便捷方法，内部等价于 `chat(UserMessage.from(text))`。
+                    一行代码即可拿到模型回复的纯文本。
+
+                    示例：`GET /lc4j/chat/simple?message=你好`
+
+                    返回 `question` 与 `answer`。
+                    """)
     @GetMapping("/simple")
-    public Map<String, Object> simple(@RequestParam(defaultValue = "用一句话介绍你自己") String message) {
+    public Map<String, Object> simple(
+            @Parameter(description = "用户消息", example = "你好")
+            @RequestParam(defaultValue = "用一句话介绍你自己") String message) {
         // chat(String) 是便捷方法，内部等价于 chat(UserMessage.from(text))
         String answer = chatModel.chat(message);
         return Map.of("question", message, "answer", answer);
@@ -53,8 +79,19 @@ public class ChatModelController {
      *
      * <p>GET /lc4j/chat/detailed?message=你好
      */
+    @Operation(summary = "获取完整响应对象（Token 用量 / 结束原因）",
+            description = """
+                    演示 `chatModel.chat(UserMessage)` 返回完整 `ChatResponse`：
+                    除了文本，还能拿到 Token 用量与结束原因等元数据 —— 做成本统计、限流、监控时必需。
+
+                    返回字段：`answer` / `finishReason` / `inputTokens` / `outputTokens` / `totalTokens`。
+
+                    示例：`GET /lc4j/chat/detailed?message=你好`
+                    """)
     @GetMapping("/detailed")
-    public Map<String, Object> detailed(@RequestParam(defaultValue = "用一句话介绍你自己") String message) {
+    public Map<String, Object> detailed(
+            @Parameter(description = "用户消息", example = "你好")
+            @RequestParam(defaultValue = "用一句话介绍你自己") String message) {
         ChatResponse response = chatModel.chat(UserMessage.from(message));
         AiMessage aiMessage = response.aiMessage();
         TokenUsage usage = response.tokenUsage();
@@ -76,6 +113,21 @@ public class ChatModelController {
      *
      * <p>GET /lc4j/chat/multi-turn
      */
+    @Operation(summary = "多轮消息列表（无入参，演示无状态）",
+            description = """
+                    演示 `chatModel.chat(List<ChatMessage>)`：自己拼装 System / User / AI 交替的消息列表，
+                    让模型理解「那」指的是上一轮的 9。
+
+                    **本接口无任何入参**，消息历史硬编码在代码中，直接 GET 即可。
+
+                    关键点：`ChatModel` 是**无状态**的，它不会记住上一轮说了什么。
+                    这里的「历史」是硬编码进去的；真实场景要用「聊天记忆」来维护
+                    （见 `GET /lc4j/memory/chat`）。
+
+                    示例：`GET /lc4j/chat/multi-turn`
+
+                    返回 `messages`（各条消息的类型列表）与 `answer`。
+                    """)
     @GetMapping("/multi-turn")
     public Map<String, Object> multiTurn() {
         List<ChatMessage> messages = List.of(

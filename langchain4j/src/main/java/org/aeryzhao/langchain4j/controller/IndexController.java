@@ -1,5 +1,7 @@
 package org.aeryzhao.langchain4j.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.aeryzhao.langchain4j.config.LangChain4jProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,6 +17,12 @@ import java.util.Map;
  *
  * <p>GET /lc4j
  */
+@Tag(name = "0. 示例导航", description = """
+        本模块的入口接口：返回全部 7 组示例的接口清单，方便快速上手与自测，
+        同时输出当前生效的模型配置（provider / chatModel / baseUrl）。
+
+        **建议从本接口开始**：先看清单，再按序号逐个体验。
+        """)
 @RestController
 @RequestMapping("/lc4j")
 @RequiredArgsConstructor
@@ -25,6 +33,19 @@ public class IndexController {
     /**
      * 返回所有示例接口清单。
      */
+    @Operation(summary = "示例导航：返回所有示例接口清单",
+            description = """
+                    返回本模块全部 7 组示例的接口清单，以及当前生效的模型配置。
+
+                    **本接口无任何入参**，直接 GET 即可。
+
+                    返回字段：
+                    - `module`：模块名（`langchain4j`）
+                    - `currentModel`：当前模型配置，含 `provider` / `chatModel` / `baseUrl`
+                    - `examples`：示例清单，每项含编号、名称与该示例的可直接调用的接口列表
+
+                    示例：`GET /lc4j`
+                    """)
     @GetMapping
     public Map<String, Object> index() {
         Map<String, Object> result = new LinkedHashMap<>();

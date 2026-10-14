@@ -368,6 +368,28 @@ public class DocumentController {
         summary = "列出知识库中的文档",
         description = "列出指定知识库中的文档分块列表，支持分页"
     )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "查询成功",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(
+                    value = "{\"results\": [{\"id\": \"doc_123\", \"content\": \"文档内容\", \"metadata\": {\"knowledgeBaseId\": \"default\"}}]}"
+                )
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "请求参数错误",
+            content = @Content
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "服务器内部错误",
+            content = @Content
+        )
+    })
     public ResponseEntity<SearchResponse> listDocuments(
             @Parameter(description = "知识库ID，不指定则使用默认知识库")
             @RequestParam(required = false) String knowledgeBaseId,

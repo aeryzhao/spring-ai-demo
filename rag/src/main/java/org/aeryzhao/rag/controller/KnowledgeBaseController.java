@@ -34,6 +34,7 @@ public class KnowledgeBaseController {
         @ApiResponse(responseCode = "400", description = "请求参数错误")
     })
     public ResponseEntity<KnowledgeBaseResponse> create(
+            @Parameter(description = "知识库创建请求", required = true)
             @Valid @RequestBody KnowledgeBaseRequest request) {
         log.info("Creating knowledge base: {}", request.getName());
         KnowledgeBaseResponse response = knowledgeBaseService.create(request);
@@ -42,6 +43,10 @@ public class KnowledgeBaseController {
 
     @GetMapping
     @Operation(summary = "列出所有知识库", description = "获取所有知识库列表")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "查询成功"),
+        @ApiResponse(responseCode = "500", description = "服务器内部错误")
+    })
     public ResponseEntity<List<KnowledgeBaseResponse>> list() {
         List<KnowledgeBaseResponse> list = knowledgeBaseService.list();
         return ResponseEntity.ok(list);
@@ -69,6 +74,7 @@ public class KnowledgeBaseController {
     public ResponseEntity<KnowledgeBaseResponse> update(
             @Parameter(description = "知识库ID", required = true)
             @PathVariable String id,
+            @Parameter(description = "知识库更新请求", required = true)
             @Valid @RequestBody KnowledgeBaseRequest request) {
         log.info("Updating knowledge base: {}", id);
         KnowledgeBaseResponse response = knowledgeBaseService.update(id, request);

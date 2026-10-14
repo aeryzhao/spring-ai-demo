@@ -17,8 +17,7 @@
     <modules>
         <module>chat</module>
         <module>langchain4j</module>
-        <module>mcp-client</module>
-        <module>mcp-server</module>
+        <module>mcp</module>
         <module>rag</module>
     </modules>
 
@@ -26,6 +25,7 @@
         <java.version>21</java.version>
         <spring-ai.version>2.0.0</spring-ai.version>
         <springdoc.version>3.1.0</springdoc.version>
+        <swagger.version>2.2.52</swagger.version>
     </properties>
 
     <dependencies>
@@ -61,6 +61,40 @@
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
                 <version>${springdoc.version}</version>
+            </dependency>
+            <!-- 统一 swagger 注解版本，与 springdoc 3.1.0 依赖的 swagger-core-jakarta:2.2.52 对齐。 -->
+            <dependency>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-annotations-jakarta</artifactId>
+                <version>${swagger.version}</version>
+            </dependency>
+            <!-- 排除 swagger 注解冲突（务必保留，否则 /v3/api-docs 会在运行时报 500）。
+                 Spring AI 2.0.0 的 com.openai:openai-java-core 会传递引入【javax 版】
+                 io.swagger.core.v3:swagger-annotations:2.2.31，它与 springdoc 依赖的
+                 【jakarta 版】swagger-annotations-jakarta 含有完全同名的类
+                 io.swagger.v3.oas.annotations.media.Schema。
+                 两者并存时，classpath 中先被搜索到的那个会遮蔽另一个。
+                 触发条件（注意不是「存在非 jakarta jar」）：
+                   提供 Schema.class 的那个 jar 缺少 $dynamicRef() 方法。
+                 实测：javax 版 2.2.31 缺少该方法；javax 版 2.2.38 与 jakarta 版则都有。
+                 一旦生效，接口只要用到 @Schema，springdoc 的 ModelResolver 反射调用该方法就会抛：
+                     NoSuchMethodError: io.swagger.v3.oas.annotations.media.Schema.$dynamicRef()
+                 症状具有迷惑性：编译正常、Swagger UI 页面也返回 200，
+                 但 /v3/api-docs 返回 500，且只有真正启动应用才会暴露。
+                 此处通过 exclusion 直接移除该 javax 版构件，使 classpath 上只剩一个
+                 Schema.class 提供者，从根上消除遮蔽竞争（而非仅靠调整版本或顺序）。
+                 注意必须用 exclusion，不能把该 jar 降级为 provided：
+                 provided 仅在打包时排除，用 java -cp 或 IDE 直接启动时它依然留在类路径上。 -->
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-starter-model-openai</artifactId>
+                <version>${spring-ai.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>io.swagger.core.v3</groupId>
+                        <artifactId>swagger-annotations</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
         </dependencies>
     </dependencyManagement>
