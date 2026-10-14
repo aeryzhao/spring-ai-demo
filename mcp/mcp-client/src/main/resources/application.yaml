@@ -1,0 +1,35 @@
+logging:
+  level:
+    org.springframework.ai.mcp: DEBUG
+    io.modelcontextprotocol: DEBUG
+    org.springframework.web.client: DEBUG
+
+spring:
+  application:
+    name: mcp-client
+  config:
+    import: optional:file:../local-config.yaml,optional:file:./local-config.yaml,optional:file:../../local-config.yaml
+  ai:
+    openai:
+      api-key: ${deepseek.api-key}
+      base-url: ${deepseek.base-url}
+      chat:
+        model: ${deepseek.chat-model}
+    mcp:
+      client:
+        enabled: true
+        name: comment-mcp-client
+        version: 1.0.0
+        type: SYNC
+        initialized: false
+        request-timeout: 30s
+        streamable-http:
+          connections:
+            comment-server:
+              url: http://localhost:8081/mcp
+              endpoint: /mcp
+
+server:
+  # 8082 在部分开发机上会被 Docker 容器等占用（表现为
+  # "Port 8082 was already in use"），故 client 使用 8090。
+  port: 8090
