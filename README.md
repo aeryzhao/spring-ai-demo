@@ -22,9 +22,8 @@
 
 ## 项目结构
 
-- `chat/`：Spring AI 基础能力示例（Chat、Prompt、结构化输出、记忆、工具调用）
-- `mcp-server/`：MCP Server（提供工具/资源/提示词）
-- `mcp-client/`：MCP Client（连接 MCP Server，并把 MCP 工具注入到 Spring AI 的工具回调体系）
+- `chat/`：Spring AI 基础能力示例（Chat、Prompt、结构化输出、记忆、工具调用），模块文档见 [`chat/README.md`](chat/README.md:1)
+- `mcp/`：**MCP 示例聚合模块**（下含 `mcp-server` 暴露工具/资源/提示词，`mcp-client` 连接它并把 MCP 工具注入到 Spring AI 的工具回调体系，见 [`mcp/README.md`](mcp/README.md:1)）
 - `rag/`：RAG 示例（文档入库、向量检索、基于检索结果生成回答）
 - `langchain4j/`：**LangChain4j 示例**（与 `chat/` 对应的另一套实现，用于对比学习，见 [`langchain4j/README.md`](langchain4j/README.md:1)）
 
@@ -40,11 +39,34 @@
 
 2. 启动模块：
    - 启动 `chat`：入口 [`ChatApplication`](chat/src/main/java/org/aeryzhao/chat/ChatApplication.java:1)
-   - 启动 `mcp-server`：入口 [`McpServerApplication`](mcp-server/src/main/java/org/aeryzhao/mcpserver/McpServerApplication.java:1)
-   - 启动 `mcp-client`：入口 [`McpClientApplication`](mcp-client/src/main/java/org/aeryzhao/mcpclient/McpClientApplication.java:1)
+   - 启动 `mcp`（**先起 server，再起 client**；两个子模块各自一个入口，命令无需额外参数）
+     - server（8081）：入口 [`McpServerApplication`](mcp/mcp-server/src/main/java/org/aeryzhao/mcpserver/McpServerApplication.java:1)
+       ```bash
+       mvn -pl mcp/mcp-server spring-boot:run
+       ```
+     - client（8090）：入口 [`McpClientApplication`](mcp/mcp-client/src/main/java/org/aeryzhao/mcpclient/McpClientApplication.java:1)
+       ```bash
+       mvn -pl mcp/mcp-client spring-boot:run
+       ```
+     - 两个入口都是标准 `@SpringBootApplication`，在 IDE 里**直接运行 `main` 方法即可**，不需要传 profile 或主类参数。详细说明见 [`mcp/README.md`](mcp/README.md:1)
    - 启动 `rag`：入口 [`RagApplication`](rag/src/main/java/org/aeryzhao/rag/RagApplication.java:1)
 
-3. 使用 Swagger 调试：仓库 README 给出了入口：[`README.md`](README.md:7)
+3. 使用 Swagger UI 调试接口（各模块启动后访问下表地址）：
+
+   | 模块 | 端口 | Swagger UI | OpenAPI JSON |
+   | --- | --- | --- | --- |
+   | `chat` | 8096 | <http://localhost:8096/swagger-ui/index.html> | <http://localhost:8096/v3/api-docs> |
+   | `langchain4j` | 8097 | <http://localhost:8097/swagger-ui/index.html> | <http://localhost:8097/v3/api-docs> |
+   | `rag` | 8080 | <http://localhost:8080/swagger-ui/index.html> | <http://localhost:8080/v3/api-docs> |
+   | `mcp/mcp-client` | 8090 | <http://localhost:8090/swagger-ui/index.html> | <http://localhost:8090/v3/api-docs> |
+
+   页面按 `@Tag` 分组（如「ChatClient 调用」「提示词」「记忆」等），点开任一接口 → **Try it out** → 填参数 → **Execute** 即可直接看到真实模型返回，无需手写 `curl`。
+
+   > 提示：
+   > - 接口大多带 `defaultValue`（如 `message=讲个笑话`），直接点 Execute 就能跑通，不必先想参数。
+   > - 标为 `text/event-stream` 的流式接口（如 `/ai/chat-model/stream`、`/lc4j/stream`）在 Swagger UI 里体验有限，建议用 `curl -N "http://localhost:8097/lc4j/stream?message=你好"` 观察逐字输出。
+   > - Swagger UI 需真实调用外部模型，请先按第 1 步配好 `local-config.yaml`，否则 Execute 会返回鉴权或连接错误（文档本身仍可正常浏览）。
+   > - 若曾遇到「页面能打开、但 `/v3/api-docs` 返回 500」，那是 swagger 注解包版本冲突所致，已在根 [`pom.xml`](pom.xml:71) 用 exclusion 修复，详见该处注释。
 
 > 说明：本指南重点讲“怎么用 Spring AI 组织能力”，不绑定某一家模型厂商。你只要保证 `OpenAiChatModel` 能正常注入即可。
 
@@ -277,88 +299,69 @@ this.chatClient = ChatClient.builder(chatModel)
 
 ## 7. MCP：把“工具/资源/提示词”做成独立服务
 
+> 模块级文档：[`mcp/README.md`](mcp/README.md:1)（子模块职责、启动命令、`/comments/**` 接口清单、端到端 curl 验证与常见问题）。
+
 MCP（Model Context Protocol）可以理解为：
 
 - 把工具（Tools）、资源（Resources）、提示词（Prompts）从业务应用中拆出来
 - 由独立的 MCP Server 统一提供
 - 业务应用（MCP Client）连接 MCP Server，动态发现并调用这些能力
 
-本仓库用 `mcp-server` + `mcp-client` 演示了一个“评论场景”。
+本仓库把这两端放在 `mcp` 聚合模块下的两个**独立子模块**里，一个模块一个角色：
+
+- [`mcp-server`](mcp/mcp-server/pom.xml:1)（端口 8081）：入口 [`McpServerApplication`](mcp/mcp-server/src/main/java/org/aeryzhao/mcpserver/McpServerApplication.java:14)，负责暴露能力
+- [`mcp-client`](mcp/mcp-client/pom.xml:1)（端口 8090）：入口 [`McpClientApplication`](mcp/mcp-client/src/main/java/org/aeryzhao/mcpclient/McpClientApplication.java:7)，负责连接它并把工具接入 Spring AI
+
+拆开的好处是各自只依赖自己需要的东西：server 不需要模型依赖，因此不存在「OpenAI 自动配置因缺 `api-key` 而启动失败」的问题。
 
 ### 7.1 MCP Server：暴露 Tools / Resources / Prompts
 
-#### Tools：评论保存与查询
+三要素分别对应三个类：
 
-工具类：[`CommentTools`](mcp-server/src/main/java/org/aeryzhao/mcpserver/comment/CommentTools.java:15)
+- **Tools**：[`CommentTools`](mcp/mcp-server/src/main/java/org/aeryzhao/mcpserver/comment/CommentTools.java:15) 用 [`@McpTool`](mcp/mcp-server/src/main/java/org/aeryzhao/mcpserver/comment/CommentTools.java:19) 暴露 `saveComment`，以及 [`listComments`](mcp/mcp-server/src/main/java/org/aeryzhao/mcpserver/comment/CommentTools.java:39)
+- **Resources**：[`ResourcesProvide`](mcp/mcp-server/src/main/java/org/aeryzhao/mcpserver/comment/ResourcesProvide.java:10) 用 [`@McpResource`](mcp/mcp-server/src/main/java/org/aeryzhao/mcpserver/comment/ResourcesProvide.java:12) 暴露 `resource://comment/guideline`
+- **Prompts**：[`PromptProvide`](mcp/mcp-server/src/main/java/org/aeryzhao/mcpserver/comment/PromptProvide.java:12) 用 [`@McpPrompt`](mcp/mcp-server/src/main/java/org/aeryzhao/mcpserver/comment/PromptProvide.java:13) 暴露 `comment-summary-prompt`，参数由 [`@McpArg`](mcp/mcp-server/src/main/java/org/aeryzhao/mcpserver/comment/PromptProvide.java:19) 声明
 
-- [`@McpTool`](mcp-server/src/main/java/org/aeryzhao/mcpserver/comment/CommentTools.java:19) 暴露 `saveComment`
-- [`@McpTool`](mcp-server/src/main/java/org/aeryzhao/mcpserver/comment/CommentTools.java:39) 暴露 `listComments`
-
-```java
-@McpTool(description = "模拟保存评论，返回生成的评论 ID、保存时间和状态。")
-public SaveCommentResponse saveComment(SaveCommentRequest request) {
-    // ...
-}
-
-@McpTool(description = "查询已经模拟保存的评论列表，可按 articleId 过滤。")
-public CommentListResponse listComments(ListCommentsRequest request) {
-    // ...
-}
-```
-
-#### Resources：评论规范
-
-资源提供：[`ResourcesProvide`](mcp-server/src/main/java/org/aeryzhao/mcpserver/comment/ResourcesProvide.java:9)
-
-- [`@McpResource`](mcp-server/src/main/java/org/aeryzhao/mcpserver/comment/ResourcesProvide.java:12) 暴露 `resource://comment/guideline`
-
-资源内容是 JSON 字符串（`mimeType=application/json`），适合被客户端读取后拼进 prompt。
-
-#### Prompts：可复用的提示词模板
-
-提示词提供：[`PromptProvide`](mcp-server/src/main/java/org/aeryzhao/mcpserver/comment/PromptProvide.java:12)
-
-- [`@McpPrompt`](mcp-server/src/main/java/org/aeryzhao/mcpserver/comment/PromptProvide.java:13) 暴露 `comment-summary-prompt`
-- 用 [`@McpArg`](mcp-server/src/main/java/org/aeryzhao/mcpserver/comment/PromptProvide.java:19) 声明参数
-
-```java
-@McpPrompt(name = "comment-summary-prompt", title = "评论总结提示词")
-public String commentSummaryPrompt(
-        @McpArg(name = "articleId", required = true) String articleId,
-        @McpArg(name = "username", required = true) String username,
-        @McpArg(name = "content", required = true) String content) {
-    return "你是评论助手。请先调用 saveComment 工具保存评论...";
-}
-```
+三者的区别：工具是**动作**，由模型决定是否调用；资源是**数据**，由客户端读取后自行使用；提示词是**模板**，把提示词工程从客户端挪到服务端统一维护。
 
 ### 7.2 MCP Client：发现并调用 MCP 能力
 
-控制器：[`CommentMcpClientController`](mcp-client/src/main/java/org/aeryzhao/mcpclient/controller/CommentMcpClientController.java:21)
+控制器：[`CommentMcpClientController`](mcp/mcp-client/src/main/java/org/aeryzhao/mcpclient/controller/CommentMcpClientController.java:23)
 
 它做了三件事：
 
-1. **把 MCP 工具注入 Spring AI**：构建 `ChatClient` 时使用 [`defaultToolCallbacks(toolCallbackProvider)`](mcp-client/src/main/java/org/aeryzhao/mcpclient/controller/CommentMcpClientController.java:37)
+1. **把 MCP 工具注入 Spring AI**：构建 `ChatClient` 时使用 [`defaultTools(toolCallbackProvider)`](mcp/mcp-client/src/main/java/org/aeryzhao/mcpclient/controller/CommentMcpClientController.java:37)
 2. **直接调用 MCP 协议能力**：
-   - 读资源：[`readResource`](mcp-client/src/main/java/org/aeryzhao/mcpclient/controller/CommentMcpClientController.java:69)
-   - 取 prompt：[`getPrompt`](mcp-client/src/main/java/org/aeryzhao/mcpclient/controller/CommentMcpClientController.java:83)
-   - 列表发现：[`listResources/listPrompts/listTools`](mcp-client/src/main/java/org/aeryzhao/mcpclient/controller/CommentMcpClientController.java:177)
-3. **把 MCP prompt 交给模型执行**：[`runCommentDemo`](mcp-client/src/main/java/org/aeryzhao/mcpclient/controller/CommentMcpClientController.java:98)
+   - 读资源：[`readResource`](mcp/mcp-client/src/main/java/org/aeryzhao/mcpclient/controller/CommentMcpClientController.java:70)
+   - 取 prompt：[`getPrompt`](mcp/mcp-client/src/main/java/org/aeryzhao/mcpclient/controller/CommentMcpClientController.java:84)
+   - 列表发现：[`listResources/listPrompts/listTools`](mcp/mcp-client/src/main/java/org/aeryzhao/mcpclient/controller/CommentMcpClientController.java:175)
+3. **把 MCP prompt 交给模型执行**：[`runCommentDemo`](mcp/mcp-client/src/main/java/org/aeryzhao/mcpclient/controller/CommentMcpClientController.java:98)
 
-核心链路（简化版）：
+关键点：client 是从 8081 **通过协议**发现工具的，而不是直接注入本进程内的 `CommentTools` bean——这正是 MCP 的价值所在。
 
-```java
-// 见 mcp-client/src/main/java/org/aeryzhao/mcpclient/controller/CommentMcpClientController.java
-String promptText = extractPromptText(prompt);
-String answer = this.chatClient.prompt()
-        .user(promptText)
-        .call()
-        .content();
+### 7.3 跑起来：两个子模块、两个端口
+
+```bash
+# 1) 先起 server（8081）
+mvn -pl mcp/mcp-server spring-boot:run
+
+# 2) 再起 client（8090）
+mvn -pl mcp/mcp-client spring-boot:run
 ```
 
-理解要点：
+> 两个子模块各自只有一个入口主类，命令无需额外参数；在 IDE 里直接运行各自的 `main` 方法也可以。
 
-- MCP Server 提供“可复用能力”（工具/资源/提示词）
-- MCP Client 负责“把能力接入业务应用”，并让模型在对话中使用这些能力
+验证（完整清单与预期输出见 [`mcp/README.md`](mcp/README.md:1)）：
+
+```bash
+curl -s "http://localhost:8090/comments/tools"     # 期望 toolCount=2、tools=['listComments','saveComment']
+curl -s "http://localhost:8090/comments/resource"  # 读 resource://comment/guideline
+curl -s "http://localhost:8090/comments/prompt"    # 取 comment-summary-prompt 的提示词正文
+curl -s "http://localhost:8090/comments/mcp/list"  # 一次列出 tools/prompts/resources
+curl -s "http://localhost:8090/comments/demo"      # 完整链路：读资源 + 取提示词 + 调模型 + 触发工具
+```
+
+> server 侧的关键点是**依赖隔离**：`mcp-server` 只依赖 `spring-ai-starter-mcp-server-webmvc`，类路径上没有模型 starter，因此不存在“OpenAI 自动配置因缺 `api-key` 而启动失败”的问题，也无需任何排除配置。
 
 ---
 
@@ -473,7 +476,7 @@ Advisor 是 Spring AI 的“横切增强点”，适合做：
 
 - 工具 schema 清晰（入参/出参字段名稳定，推荐 `record`）
 - system prompt 明确“何时调用工具、调用哪个工具、参数来源”
-- 对工具实现做参数校验（例如 [`CommentTools.saveComment()`](mcp-server/src/main/java/org/aeryzhao/mcpserver/comment/CommentTools.java:20) 的必填校验）
+- 对工具实现做参数校验（例如 [`CommentTools.saveComment()`](mcp/mcp-server/src/main/java/org/aeryzhao/mcpserver/comment/CommentTools.java:20) 的必填校验）
 
 ---
 
