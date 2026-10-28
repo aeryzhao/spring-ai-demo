@@ -16,6 +16,7 @@
       --user-bg: #c8102e;
       --bot-bg: #ffffff;
       --shadow: 0 8px 30px rgba(24, 34, 64, .08);
+      --code-bg: #f7f8fc;
     }
 
     * { box-sizing: border-box; }
@@ -28,27 +29,30 @@
       min-height: 100vh;
       display: flex;
       justify-content: center;
-      padding: 28px 16px;
+      padding: 24px 16px;
     }
 
     .app {
-      width: min(920px, 100%);
+      width: min(940px, 100%);
       background: var(--panel);
       border-radius: 20px;
       box-shadow: var(--shadow);
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      height: min(860px, calc(100vh - 56px));
+      height: min(880px, calc(100vh - 48px));
+      transition: width .22s ease;
     }
+    .app.with-api { width: min(1380px, 100%); }
 
     header {
       display: flex;
       align-items: center;
       gap: 14px;
-      padding: 18px 22px;
+      padding: 16px 22px;
       border-bottom: 1px solid var(--line);
       background: linear-gradient(120deg, #fff 0%, #fff8f9 100%);
+      flex: none;
     }
 
     .avatar {
@@ -76,6 +80,11 @@
       transition: .18s; flex: none;
     }
     .ghost-btn:hover { border-color: #d6dbe9; color: var(--ink); background: #fafbff; }
+    .ghost-btn.active { border-color: #f0b7c2; color: #b8102a; background: var(--brand-soft); }
+
+    .body { flex: 1; display: flex; min-height: 0; }
+
+    .chat-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 
     #messages {
       flex: 1; overflow-y: auto; padding: 22px;
@@ -137,7 +146,7 @@
     .typing i:nth-child(3) { animation-delay: .4s; }
     @keyframes blink { 0%, 80%, 100% { opacity: .25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-2px); } }
 
-    footer { border-top: 1px solid var(--line); padding: 14px 18px 16px; background: #fff; }
+    footer { border-top: 1px solid var(--line); padding: 14px 18px 16px; background: #fff; flex: none; }
 
     .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
     .chip {
@@ -164,10 +173,116 @@
 
     .hint { font-size: 11.5px; color: #9aa2b6; margin-top: 8px; }
     .error { color: #b42318; background: #fff1f0; border: 1px solid #ffd6d2; }
+
+    /* ---------- 接口面板 ---------- */
+    #api-panel {
+      width: 0; flex: none; overflow: hidden;
+      border-left: 1px solid var(--line);
+      background: #fcfdff;
+      display: flex; flex-direction: column;
+      transition: width .22s ease;
+    }
+    .app.with-api #api-panel { width: 420px; }
+
+    .api-head {
+      display: flex; align-items: center; gap: 8px;
+      padding: 14px 16px 10px; border-bottom: 1px solid var(--line);
+      flex: none;
+    }
+    .api-head h2 { font-size: 13.5px; margin: 0; flex: 1; font-weight: 650; }
+    .api-head .sub { font-size: 11.5px; color: var(--muted); }
+
+    .api-scroll { flex: 1; overflow-y: auto; padding: 12px 14px 18px; }
+
+    .api-group { margin-bottom: 14px; }
+    .api-group > h3 {
+      font-size: 12px; letter-spacing: .04em;
+      color: #7b8499; margin: 0 0 8px; font-weight: 600;
+    }
+
+    .api-stat { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .api-stat span {
+      font-size: 11.5px; background: #eef2fb; color: #3c4a63;
+      border-radius: 6px; padding: 3px 8px;
+    }
+
+    .api-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px;
+      background: #fff; margin-bottom: 6px; font-size: 12.5px; cursor: pointer;
+      transition: .16s; text-align: left; width: 100%;
+      font-family: inherit; color: inherit; text-decoration: none;
+    }
+    .api-row:hover { border-color: #f0b7c2; background: #fffafb; }
+    .api-row.static { cursor: default; }
+    .api-row.static:hover { border-color: var(--line); background: #fff; }
+
+    .method {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 10.5px; font-weight: 700; letter-spacing: .02em;
+      border-radius: 5px; padding: 2px 6px; flex: none;
+      background: #e8f0ff; color: #2158c9;
+    }
+    .method.post { background: #eafaf0; color: #157347; }
+    .method.ui { background: #f3ecff; color: #6b32c9; }
+    .path {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11.5px; color: #2c3648; flex: 1; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+    .api-row .desc { font-size: 11.5px; color: var(--muted); flex: none; }
+
+    .mini-btns { display: flex; gap: 6px; flex-wrap: wrap; margin: 2px 0 8px; }
+    .mini-btn {
+      border: 1px solid var(--line); background: #fff; color: #45506a;
+      font-size: 11.5px; border-radius: 8px; padding: 5px 9px; cursor: pointer; transition: .16s;
+      font-family: inherit;
+    }
+    .mini-btn:hover { border-color: #f0b7c2; color: #b8102a; background: #fff7f8; }
+    .mini-btn[disabled] { opacity: .55; cursor: progress; }
+
+    .doc-item {
+      border-left: 2px solid var(--line); padding: 2px 0 2px 9px;
+      margin-bottom: 7px; font-size: 12px; color: #3c4a63;
+    }
+    .doc-item a { color: #2a5ada; text-decoration: none; }
+    .doc-item a:hover { text-decoration: underline; }
+    .doc-item .doc-meta { color: #8b93a7; font-size: 11px; }
+
+    #api-result-wrap {
+      border-top: 1px solid var(--line); background: #fff; flex: none;
+      max-height: 44%; display: flex; flex-direction: column;
+    }
+    #api-result-head {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 14px; font-size: 11.5px; color: var(--muted);
+      border-bottom: 1px solid var(--line);
+    }
+    #api-result-head .status { font-weight: 600; }
+    #api-result-head .status.ok { color: #157347; }
+    #api-result-head .status.bad { color: #b42318; }
+    #api-result-head .spacer { flex: 1; }
+    #api-result {
+      margin: 0; padding: 10px 14px; overflow: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px; line-height: 1.55; color: #2c3648;
+      background: var(--code-bg); white-space: pre-wrap; word-break: break-word;
+      flex: 1; min-height: 60px;
+    }
+
+    .empty { font-size: 12px; color: #9aa2b6; padding: 4px 2px; }
+    .empty code { background: #eef2fb; border-radius: 4px; padding: 0 4px; }
+
+    @media (max-width: 900px) {
+      .app.with-api #api-panel {
+        position: fixed; top: 0; right: 0; bottom: 0; width: min(420px, 92vw);
+        z-index: 20; box-shadow: -12px 0 40px rgba(24,34,64,.14);
+      }
+    }
   </style>
 </head>
 <body>
-<div class="app">
+<div class="app" id="app">
   <header>
     <div class="avatar">京</div>
     <div class="title-block">
@@ -178,19 +293,103 @@
         <span class="pill" id="order-pill">订单数据：本地模拟</span>
       </div>
     </div>
+    <button class="ghost-btn" id="api-toggle" title="展开/收起接口面板">接口</button>
     <button class="ghost-btn" id="reset-btn" title="清空当前会话上下文">新会话</button>
   </header>
 
-  <div id="messages"></div>
-
-  <footer>
-    <div class="chips" id="chips"></div>
-    <div class="input-bar">
-      <textarea id="input" rows="1" placeholder="想咨询订单、物流、退换货或发票？直接问我，例如：我的订单 JD202610120001 还能退吗？"></textarea>
-      <button class="send" id="send-btn">发送</button>
+  <div class="body">
+    <div class="chat-col">
+      <div id="messages"></div>
+      <footer>
+        <div class="chips" id="chips"></div>
+        <div class="input-bar">
+          <textarea id="input" rows="1" placeholder="想咨询订单、物流、退换货或发票？直接问我，例如：我的订单 JD202610120001 还能退吗？"></textarea>
+          <button class="send" id="send-btn">发送</button>
+        </div>
+        <div class="hint">Enter 发送 · Shift + Enter 换行 · 右上「接口」按钮可查看并在线调用全部 REST 接口</div>
+      </footer>
     </div>
-    <div class="hint">Enter 发送 · Shift + Enter 换行 · 回答基于抓取到的帮助中心政策 + 订单工具实时查询</div>
-  </footer>
+
+    <aside id="api-panel">
+      <div class="api-head">
+        <h2>REST 接口</h2>
+        <span class="sub">点条目在线调用</span>
+        <button class="ghost-btn" id="api-close" style="padding:4px 9px">收起</button>
+      </div>
+
+      <div class="api-scroll">
+        <div class="api-group">
+          <h3>知识库</h3>
+          <div class="api-stat" id="kb-stats"><span>加载中…</span></div>
+          <button class="api-row" data-method="GET" data-path="/api/knowledge/stats">
+            <span class="method">GET</span><span class="path">/api/knowledge/stats</span><span class="desc">索引状态</span>
+          </button>
+          <button class="api-row" data-method="GET" data-path="/api/knowledge/documents">
+            <span class="method">GET</span><span class="path">/api/knowledge/documents</span><span class="desc">文档清单</span>
+          </button>
+          <button class="api-row" data-method="POST" data-path="/api/knowledge/reindex">
+            <span class="method post">POST</span><span class="path">/api/knowledge/reindex</span><span class="desc">重建索引</span>
+          </button>
+          <button class="api-row" data-method="POST" data-path="/api/knowledge/crawl?force=false">
+            <span class="method post">POST</span><span class="path">/api/knowledge/crawl?force=false</span><span class="desc">增量抓取</span>
+          </button>
+          <div class="mini-btns">
+            <button class="mini-btn" data-act="reindex">一键重建索引</button>
+            <button class="mini-btn" data-act="crawl">一键增量抓取</button>
+          </div>
+          <div id="kb-docs"></div>
+        </div>
+
+        <div class="api-group">
+          <h3>对话</h3>
+          <button class="api-row" data-method="POST" data-path="/api/chat"
+                  data-body='{"message":"我的订单 JD202610120001 还能七天无理由退货吗？"}'>
+            <span class="method post">POST</span><span class="path">/api/chat</span><span class="desc">同步问答</span>
+          </button>
+          <div class="api-row static">
+            <span class="method">GET</span><span class="path">/api/chat/stream</span><span class="desc">SSE（本页在用）</span>
+          </div>
+          <div class="empty">聊天窗口的每条回答都是这两个接口的结果：<code>answer</code> + <code>sources</code> + <code>toolCalls</code>。</div>
+        </div>
+
+        <div class="api-group">
+          <h3>订单与物流</h3>
+          <button class="api-row" data-method="GET" data-path="/api/orders">
+            <span class="method">GET</span><span class="path">/api/orders</span><span class="desc">全部订单</span>
+          </button>
+          <div id="order-list"></div>
+        </div>
+
+        <div class="api-group">
+          <h3>工单</h3>
+          <button class="api-row" data-method="GET" data-path="/api/tickets">
+            <span class="method">GET</span><span class="path">/api/tickets</span><span class="desc">全部工单</span>
+          </button>
+          <div id="ticket-list"></div>
+        </div>
+
+        <div class="api-group">
+          <h3>文档</h3>
+          <a class="api-row" href="/swagger-ui/index.html" target="_blank" rel="noreferrer">
+            <span class="method ui">UI</span><span class="path">/swagger-ui/index.html</span><span class="desc">Swagger ↗</span>
+          </a>
+          <a class="api-row" href="/v3/api-docs" target="_blank" rel="noreferrer">
+            <span class="method">GET</span><span class="path">/v3/api-docs</span><span class="desc">OpenAPI JSON ↗</span>
+          </a>
+        </div>
+      </div>
+
+      <div id="api-result-wrap">
+        <div id="api-result-head">
+          <span id="api-result-title">响应</span>
+          <span class="status" id="api-result-status"></span>
+          <span class="spacer"></span>
+          <span id="api-result-time"></span>
+        </div>
+        <pre id="api-result">点击上方任意接口条目即可发起调用，这里显示原始响应。</pre>
+      </div>
+    </aside>
+  </div>
 </div>
 
 <script>
@@ -203,14 +402,23 @@
     '我要退货，商品已经拆封了怎么办？'
   ];
 
+  const appEl = document.getElementById('app');
   const messagesEl = document.getElementById('messages');
   const inputEl = document.getElementById('input');
   const sendBtn = document.getElementById('send-btn');
   const chipsEl = document.getElementById('chips');
   const resetBtn = document.getElementById('reset-btn');
+  const apiToggle = document.getElementById('api-toggle');
+  const apiClose = document.getElementById('api-close');
+  const apiResult = document.getElementById('api-result');
+  const apiResultTitle = document.getElementById('api-result-title');
+  const apiResultStatus = document.getElementById('api-result-status');
+  const apiResultTime = document.getElementById('api-result-time');
 
   let sessionId = localStorage.getItem('cs-session-id') || '';
   let streaming = false;
+
+  /* ---------------- 聊天 ---------------- */
 
   QUICK_QUESTIONS.forEach(text => {
     const chip = document.createElement('button');
@@ -244,7 +452,7 @@
 
   function greet() {
     appendBot('你好，我是智能客服小京 👋 可以帮你查订单、看物流、判断能否退换货。\n'
-      + '下面这些问题可以直接点，也可以自己描述。');
+      + '下面这些问题可以直接点，也可以自己描述；右上角「接口」按钮能看本次用到的全部后端接口。');
   }
 
   function submit() {
@@ -309,6 +517,9 @@
       attachMeta(row, sources, toolCalls);
       messagesEl.scrollTop = messagesEl.scrollHeight;
       finish();
+      if (toolCalls.length && appEl.classList.contains('with-api')) {
+        loadTickets();
+      }
     });
 
     es.addEventListener('error', event => {
@@ -380,10 +591,7 @@
   }
 
   function escapeHtml(text) {
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
   function appendRow(kind) {
@@ -422,6 +630,94 @@
     }
   }
 
+  /* ---------------- 接口面板 ---------------- */
+
+  function toggleApi(open) {
+    const shouldOpen = open === undefined ? !appEl.classList.contains('with-api') : open;
+    appEl.classList.toggle('with-api', shouldOpen);
+    apiToggle.classList.toggle('active', shouldOpen);
+    if (shouldOpen) {
+      loadStats();
+      loadDocuments();
+      loadOrders();
+      loadTickets();
+    }
+  }
+
+  apiToggle.addEventListener('click', () => toggleApi());
+  apiClose.addEventListener('click', () => toggleApi(false));
+
+  async function apiCall(method, path, body) {
+    apiResultTitle.textContent = method + ' ' + path;
+    apiResultStatus.textContent = '请求中…';
+    apiResultStatus.className = 'status';
+    apiResultTime.textContent = '';
+    apiResult.textContent = '';
+
+    const started = performance.now();
+    try {
+      const response = await fetch(path, {
+        method,
+        headers: body ? { 'Content-Type': 'application/json' } : undefined,
+        body: body ? JSON.stringify(body) : undefined
+      });
+      const text = await response.text();
+      let pretty = text;
+      try { pretty = JSON.stringify(JSON.parse(text), null, 2); } catch (ignored) {}
+      apiResult.textContent = pretty || '（空响应）';
+      apiResultStatus.textContent = response.status + ' ' + (response.ok ? 'OK' : 'ERROR');
+      apiResultStatus.className = 'status ' + (response.ok ? 'ok' : 'bad');
+      apiResultTime.textContent = Math.round(performance.now() - started) + ' ms';
+      return response.ok ? safeParse(text) : null;
+    } catch (error) {
+      apiResult.textContent = String(error);
+      apiResultStatus.textContent = '网络错误';
+      apiResultStatus.className = 'status bad';
+      return null;
+    }
+  }
+
+  function safeParse(text) {
+    try { return JSON.parse(text); } catch (ignored) { return null; }
+  }
+
+  // 面板里所有可点击的接口条目统一走这里
+  document.querySelectorAll('.api-row[data-path]').forEach(row => {
+    row.addEventListener('click', () => {
+      const method = row.dataset.method || 'GET';
+      const path = row.dataset.path;
+      let body;
+      if (row.dataset.body) {
+        body = safeParse(row.dataset.body);
+        if (body && !body.sessionId) {
+          body.sessionId = sessionId || 'api-panel';
+        }
+      }
+      apiCall(method, path, body);
+    });
+  });
+
+  document.querySelectorAll('[data-act]').forEach(button => {
+    button.addEventListener('click', async () => {
+      const act = button.dataset.act;
+      const label = button.textContent;
+      button.disabled = true;
+      button.textContent = act === 'crawl' ? '抓取中…' : '重建中…';
+      try {
+        if (act === 'reindex') {
+          await apiCall('POST', '/api/knowledge/reindex');
+        } else {
+          await apiCall('POST', '/api/knowledge/crawl?force=false');
+        }
+        await loadStats();
+        await loadDocuments();
+      } finally {
+        button.disabled = false;
+        button.textContent = label;
+      }
+    });
+  });
+
   async function loadStats() {
     try {
       const response = await fetch('/api/knowledge/stats');
@@ -429,11 +725,120 @@
       document.getElementById('doc-pill').textContent =
         '知识库：' + (stats.documents ?? 0) + ' 篇 / ' + (stats.chunks ?? 0) + ' 片段';
       updateMode(stats.mode);
+
+      const box = document.getElementById('kb-stats');
+      box.innerHTML = '';
+      ['模式 ' + (stats.mode || '-'), '文档 ' + (stats.documents ?? 0), '片段 ' + (stats.chunks ?? 0)]
+        .forEach(text => {
+          const span = document.createElement('span');
+          span.textContent = text;
+          box.appendChild(span);
+        });
       if (stats.lastError) {
-        document.getElementById('mode-text').title = stats.lastError;
+        const span = document.createElement('span');
+        span.textContent = '已降级';
+        span.title = stats.lastError;
+        box.appendChild(span);
       }
-    } catch (e) {
+    } catch (error) {
       document.getElementById('doc-pill').textContent = '知识库：未就绪';
+      document.getElementById('kb-stats').innerHTML = '<span>知识库未就绪</span>';
+    }
+  }
+
+  async function loadDocuments() {
+    const box = document.getElementById('kb-docs');
+    try {
+      const response = await fetch('/api/knowledge/documents');
+      const docs = await response.json();
+      box.innerHTML = '';
+      if (!docs.length) {
+        box.innerHTML = '<div class="empty">还没有文档，点「一键增量抓取」试试。</div>';
+        return;
+      }
+      const head = document.createElement('div');
+      head.className = 'empty';
+      head.textContent = '已抓取 ' + docs.length + ' 篇（点标题看原文）';
+      box.appendChild(head);
+      docs.forEach(doc => {
+        const item = document.createElement('div');
+        item.className = 'doc-item';
+        const link = document.createElement('a');
+        link.href = doc.source;
+        link.target = '_blank';
+        link.rel = 'noreferrer';
+        link.textContent = doc.title;
+        const meta = document.createElement('div');
+        meta.className = 'doc-meta';
+        meta.textContent = doc.category + ' · ' + doc.chars + ' 字';
+        item.appendChild(link);
+        item.appendChild(meta);
+        box.appendChild(item);
+      });
+    } catch (error) {
+      box.innerHTML = '<div class="empty">文档清单加载失败</div>';
+    }
+  }
+
+  async function loadOrders() {
+    const box = document.getElementById('order-list');
+    try {
+      const response = await fetch('/api/orders');
+      const orders = await response.json();
+      box.innerHTML = '';
+      orders.forEach(order => {
+        const row = document.createElement('button');
+        row.className = 'api-row';
+        row.innerHTML = '<span class="method">GET</span>'
+          + '<span class="path">/api/orders/' + order.orderNo + '</span>'
+          + '<span class="desc">' + order.status + '</span>';
+        row.title = order.items.map(item => item.name).join('、');
+        row.addEventListener('click', () => apiCall('GET', '/api/orders/' + order.orderNo));
+        box.appendChild(row);
+
+        const extra = document.createElement('div');
+        extra.className = 'mini-btns';
+        const traffic = document.createElement('button');
+        traffic.className = 'mini-btn';
+        traffic.textContent = '物流 ' + order.orderNo.slice(-4);
+        traffic.addEventListener('click',
+          () => apiCall('GET', '/api/orders/' + order.orderNo + '/logistics'));
+        const afterSale = document.createElement('button');
+        afterSale.className = 'mini-btn';
+        afterSale.textContent = '售后资格 ' + order.orderNo.slice(-4);
+        afterSale.addEventListener('click',
+          () => apiCall('GET', '/api/orders/' + order.orderNo + '/after-sale-eligibility'));
+        extra.appendChild(traffic);
+        extra.appendChild(afterSale);
+        box.appendChild(extra);
+      });
+    } catch (error) {
+      box.innerHTML = '<div class="empty">订单加载失败</div>';
+    }
+  }
+
+  async function loadTickets() {
+    const box = document.getElementById('ticket-list');
+    try {
+      const response = await fetch('/api/tickets');
+      const tickets = await response.json();
+      box.innerHTML = '';
+      if (!tickets.length) {
+        box.innerHTML = '<div class="empty">还没有工单，聊天里说「我要退货 / 转人工」就会生成。</div>';
+        return;
+      }
+      tickets.slice(0, 6).forEach(ticket => {
+        const row = document.createElement('button');
+        row.className = 'api-row';
+        row.innerHTML = '<span class="method">GET</span>'
+          + '<span class="path">/api/tickets/' + ticket.ticketNo + '</span>'
+          + '<span class="desc">' + ticket.type + '</span>';
+        row.title = ticket.summary;
+        row.addEventListener('click', () => apiCall('GET', '/api/tickets/' + ticket.ticketNo));
+        box.appendChild(row);
+      });
+    } catch (error) {
+      box.innerHTML = '<div class="empty">工单加载失败</div>';
     }
   }
 

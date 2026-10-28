@@ -23,6 +23,7 @@
 | 多轮记忆 | [`AiConfig`](src/main/java/org/aeryzhao/customerservice/config/AiConfig.java:1) | `MessageWindowChatMemory`，按 `sessionId` 隔离 |
 | 流式输出 | [`ChatController`](src/main/java/org/aeryzhao/customerservice/controller/ChatController.java:1) | SSE 三类事件：`meta` / `token` / `done` |
 | 聊天页面 | [`static/index.html`](src/main/resources/static/index.html:1) | 无前端构建，原生 `EventSource`，展示引用与工具轨迹 |
+| 接口面板 | 同上 | 页面右上「接口」按钮：列出全部 REST 接口，点条目即在线调用并展示原始响应（知识库/订单/物流/售后/工单） |
 
 ---
 
@@ -137,6 +138,10 @@ ChatClient
 
 4. **打开聊天页**：<http://localhost:8098/> ，或调试接口：<http://localhost:8098/swagger-ui/index.html>
 
+   页面右上角「接口」按钮会展开 REST 接口面板：左侧是接口清单（GET/POST + 路径 + 说明），
+   点任意条目即发起真实调用，右侧显示状态码/耗时/格式化后的响应；面板里还会直接列出
+   知识文档、订单（可一键查物流与售后资格）、工单，方便对照聊天回答验证后端数据。
+
 > 仓库里已经带了抓好的 `data/knowledge/*.md`，所以**不联网也能演示**（抓取只是为了可复现）。
 
 ### 4.1 数据目录怎么定位
@@ -172,6 +177,10 @@ o.a.c.config.DataDirectoryResolver : 数据目录：/Users/xxx/spring-ai-demo/cu
 | GET | `/api/orders/{orderNo}/logistics` | 物流轨迹 |
 | GET | `/api/orders/{orderNo}/after-sale-eligibility` | 售后资格判定结果 |
 | GET | `/api/tickets`、`/api/tickets/{ticketNo}` | 售后/转人工工单 |
+
+> 页面右上「接口」按钮里同样可以调用下表所有接口（不必开 Swagger，也不必写 curl），
+> 响应支持状态码、耗时与 JSON 美化；`POST /api/knowledge/reindex`、`crawl` 这类耗时操作
+> 会禁用按钮并显示「重建中…/抓取中…」。
 
 示例：
 

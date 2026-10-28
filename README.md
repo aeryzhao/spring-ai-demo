@@ -503,7 +503,7 @@ String answer = chatClientBuilder.build().prompt().user(prompt).call().content()
 
 ```bash
 mvn -pl customer-service spring-boot:run
-# 打开 http://localhost:8098/
+# 打开 http://localhost:8098/ ；点右上「接口」按钮可在页面里查看并在线调用全部 REST 接口
 ```
 
 按顺序问这几句（`data/orders.json` 里准备了覆盖各种分支的模拟订单）：
