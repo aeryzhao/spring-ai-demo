@@ -9,3 +9,4 @@
 - [x] MCP Client
 - [x] MCP Server
 - [x] RAG
+- [x] 智能客服案例（网页抓取 + RAG + 工具调用 + 流式对话）

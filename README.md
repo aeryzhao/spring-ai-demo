@@ -18,6 +18,7 @@
   - [7.1 MCP Server：暴露 Tools / Resources / Prompts](#71-mcp-server暴露-tools--resources--prompts)
   - [7.2 MCP Client：发现并调用 MCP 能力](#72-mcp-client发现并调用-mcp-能力)
 - [8. RAG：检索增强生成（Milvus + Ollama）](#8-rag检索增强生成milvus--ollama)
+- [9. 智能客服案例：抓取 + RAG + 工具调用](#9-智能客服案例抓取--rag--工具调用)
 - [常见问题与进阶建议](#常见问题与进阶建议)
 
 ## 项目结构
@@ -25,6 +26,7 @@
 - `chat/`：Spring AI 基础能力示例（Chat、Prompt、结构化输出、记忆、工具调用），模块文档见 [`chat/README.md`](chat/README.md:1)
 - `mcp/`：**MCP 示例聚合模块**（下含 `mcp-server` 暴露工具/资源/提示词，`mcp-client` 连接它并把 MCP 工具注入到 Spring AI 的工具回调体系，见 [`mcp/README.md`](mcp/README.md:1)）
 - `rag/`：RAG 示例（文档入库、向量检索、基于检索结果生成回答）
+- `customer-service/`：**智能客服案例**（从公开网页抓取知识库 → 本地 RAG 检索 → 工具调用查订单/物流/售后 → 多轮记忆 + SSE 流式输出，见 [`customer-service/README.md`](customer-service/README.md:1)）
 - `langchain4j/`：**LangChain4j 示例**（与 `chat/` 对应的另一套实现，用于对比学习，见 [`langchain4j/README.md`](langchain4j/README.md:1)）
 
 对应待办：[`TODOLIST.md`](TODOLIST.md:1)
@@ -50,6 +52,12 @@
        ```
      - 两个入口都是标准 `@SpringBootApplication`，在 IDE 里**直接运行 `main` 方法即可**，不需要传 profile 或主类参数。详细说明见 [`mcp/README.md`](mcp/README.md:1)
    - 启动 `rag`：入口 [`RagApplication`](rag/src/main/java/org/aeryzhao/rag/RagApplication.java:1)
+   - 启动 `customer-service`：入口 [`CustomerServiceApplication`](customer-service/src/main/java/org/aeryzhao/customerservice/CustomerServiceApplication.java:1)
+     ```bash
+     mvn -pl customer-service spring-boot:run   # 8098，打开 http://localhost:8098/ 即是聊天页
+     ```
+     知识库已随仓库提供（`customer-service/data/knowledge/`），无需先联网抓取；需要重新抓取时用
+     `--spring.profiles.active=crawl` 跑一次即可，详见 [`customer-service/README.md`](customer-service/README.md:1)
 
 3. 使用 Swagger UI 调试接口（各模块启动后访问下表地址）：
 
@@ -58,6 +66,7 @@
    | `chat` | 8096 | <http://localhost:8096/swagger-ui/index.html> | <http://localhost:8096/v3/api-docs> |
    | `langchain4j` | 8097 | <http://localhost:8097/swagger-ui/index.html> | <http://localhost:8097/v3/api-docs> |
    | `rag` | 8080 | <http://localhost:8080/swagger-ui/index.html> | <http://localhost:8080/v3/api-docs> |
+   | `customer-service` | 8098 | <http://localhost:8098/swagger-ui/index.html> | <http://localhost:8098/v3/api-docs> |
    | `mcp/mcp-client` | 8090 | <http://localhost:8090/swagger-ui/index.html> | <http://localhost:8090/v3/api-docs> |
 
    页面按 `@Tag` 分组（如「ChatClient 调用」「提示词」「记忆」等），点开任一接口 → **Try it out** → 填参数 → **Execute** 即可直接看到真实模型返回，无需手写 `curl`。
@@ -453,6 +462,57 @@ String answer = chatClientBuilder.build().prompt().user(prompt).call().content()
 - 先按 [`rag/README.md`](rag/README.md:30) 启动 Milvus 与 Ollama，并拉取 embedding/chat 模型
 - 先调用“文档入库”接口写入少量可控文本，再调用 `/api/ask` 验证检索与回答
 - 如果检索结果为空：优先检查 embedding 维度、Milvus collection schema、metricType 是否匹配
+
+---
+
+## 9. 智能客服案例：抓取 + RAG + 工具调用
+
+`customer-service/` 是把前面几节能力（提示词、记忆、工具调用、RAG、流式输出）串成**一个完整业务闭环**的案例：
+数据自己从公开网页抓、落到本地、再用来作答，回答里既要有政策依据（带引用角标），也要有真实订单数据（走工具查询）。
+
+模块文档：[`customer-service/README.md`](customer-service/README.md:1)
+
+### 9.1 数据从哪来
+
+- 抓取源清单：[`resources/crawl/sources.json`](customer-service/src/main/resources/crawl/sources.json:1)，25 个公开页面
+  - 京东帮助中心移动版 24 篇：配送/支付/发票/售后政策/常见问题/京豆优惠券会员等
+  - 中国政府网 1 篇：《网络购买商品七日无理由退货暂行办法》原文
+- 抓取实现：[`KnowledgeCrawler`](customer-service/src/main/java/org/aeryzhao/customerservice/crawl/KnowledgeCrawler.java:1)
+  （Jsoup 抽正文 → 「front matter + Markdown」落盘 `data/knowledge/*.md`，限速 800ms）
+- 命令：`java -jar customer-service.jar --spring.profiles.active=crawl [--force]`，跑完即退出，不启 Web
+
+抓取踩到的两个坑（已在代码里处理）：`gov.cn` 证书链不在 JDK 信任库（命中 SSL 异常时用宽松 TLS 兜底）；
+京东对 Java `HttpClient` 返回精简页（主链路必须用 Jsoup）。
+
+### 9.2 一次问答经过什么
+
+1. `KnowledgeIndexService.search()`：Ollama `qwen3-embedding` + `SimpleVectorStore` 召回 TopK 片段
+   （索引缓存 `data/vector-store.json`；Ollama 不在时自动降级为中文二元组关键词检索）
+2. `CustomerServiceAgent.prepare()`：把片段编号成 `[1][2]…` 拼进 **system**（不污染记忆）
+3. `ChatClient` + `MessageChatMemoryAdvisor`（按 `sessionId` 记忆）+ `CustomerServiceTools`
+4. 需要业务数据时模型自主调用工具：
+   `queryOrder` / `queryOrdersByPhone` / `queryLogistics` / `checkAfterSaleEligibility` / `submitReturnRequest` / `createHumanTicket` / `queryTicket`
+5. 返回答案 + `sources` + `toolCalls`；流式接口用 `meta` / `token` / `done` 三类 SSE 事件
+
+### 9.3 「政策文」→「规则码」
+
+`AfterSalePolicyService.judge()` 把抓来的政策写成可执行判定（7 天无理由、15 天换货、生鲜/定制/内衣等品类排除、
+未签收与已取消分支），工具把结论交给模型表达。**能不能退由代码定，怎么解释由模型说**，避免政策类幻觉。
+
+### 9.4 怎么体验
+
+```bash
+mvn -pl customer-service spring-boot:run
+# 打开 http://localhost:8098/
+```
+
+按顺序问这几句（`data/orders.json` 里准备了覆盖各种分支的模拟订单）：
+
+1. `我的订单 JD202610120001 还能七天无理由退货吗？` —— 工具查订单 + 政策引用
+2. `那这单的物流到哪了？` —— 记忆生效，自动复用订单号
+3. `配送费怎么收？自提要钱吗？` —— 纯知识库回答
+4. `我要退货，订单 JD202610120001，原因是屏幕有坏点` —— 自动建售后单
+5. `我要投诉，请转人工` —— 建人工工单（`GET /api/tickets` 可查）
 
 ---
 
