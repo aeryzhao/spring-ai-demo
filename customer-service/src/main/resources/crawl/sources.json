@@ -1,0 +1,159 @@
+{
+  "_comment": "智能客服知识库抓取源。全部为公开可访问的帮助中心/政策页面，抓取后落地为 data/knowledge/*.md。jd-flow、jd-youju 两页正文是图片流程图，已从清单移除。",
+  "extractors": {
+    "JD_HELP": "京东帮助中心移动版（服务端直出 HTML）：正文容器 div.help-box，标题 h3.help-tit01",
+    "GOV_POLICY": "中国政府网政策文件：正文容器 #UCAP-CONTENT"
+  },
+  "sources": [
+    {
+      "slug": "jd-price-explanation",
+      "category": "购物指南",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/price-explanation.html"
+    },
+    {
+      "slug": "jd-ziti",
+      "category": "配送方式",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/ziti.html"
+    },
+    {
+      "slug": "jd-jingdongpeisong",
+      "category": "配送方式",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/jingdongpeisong.html"
+    },
+    {
+      "slug": "jd-shangjiapeisong",
+      "category": "配送方式",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/shangjiapeisong.html"
+    },
+    {
+      "slug": "jd-peisonshoufei",
+      "category": "配送方式",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/peisonshoufei.html"
+    },
+    {
+      "slug": "jd-zaixian",
+      "category": "支付方式",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/zaixian.html"
+    },
+    {
+      "slug": "jd-daofu",
+      "category": "支付方式",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/daofu.html"
+    },
+    {
+      "slug": "jd-saomazhifu",
+      "category": "支付方式",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/saomazhifu.html"
+    },
+    {
+      "slug": "jd-fapiao",
+      "category": "发票说明",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/fapiao.html"
+    },
+    {
+      "slug": "jd-ziyingshouhou",
+      "category": "售后服务",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/ziyingshouhou.html"
+    },
+    {
+      "slug": "jd-disanfangshouhou",
+      "category": "售后服务",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/disanfangshouhou.html"
+    },
+    {
+      "slug": "jd-tuihuanzhengce",
+      "category": "售后服务",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/tuihuanzhengce.html"
+    },
+    {
+      "slug": "jd-faq",
+      "category": "常见问题",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/faq.html"
+    },
+    {
+      "slug": "jd-faqone",
+      "category": "常见问题",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/faqone.html"
+    },
+    {
+      "slug": "jd-faqtwo",
+      "category": "常见问题",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/faqtwo.html"
+    },
+    {
+      "slug": "jd-faqfour",
+      "category": "常见问题",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/faqfour.html"
+    },
+    {
+      "slug": "jd-faqfive",
+      "category": "常见问题",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/faqfive.html"
+    },
+    {
+      "slug": "jd-faqseven",
+      "category": "常见问题",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/faqseven.html"
+    },
+    {
+      "slug": "jd-faqnine",
+      "category": "常见问题",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/faqnine.html"
+    },
+    {
+      "slug": "jd-faqten",
+      "category": "常见问题",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/faqten.html"
+    },
+    {
+      "slug": "jd-score",
+      "category": "账户与权益",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/score.html"
+    },
+    {
+      "slug": "jd-youhuijuan",
+      "category": "账户与权益",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/youhuijuan.html"
+    },
+    {
+      "slug": "jd-level",
+      "category": "账户与权益",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/level.html"
+    },
+    {
+      "slug": "jd-close-account",
+      "category": "账户与权益",
+      "extractor": "JD_HELP",
+      "url": "https://in.m.jd.com/help/app/close_account.html"
+    },
+    {
+      "slug": "policy-7days-return",
+      "category": "法规政策",
+      "extractor": "GOV_POLICY",
+      "url": "https://www.gov.cn/zhengce/zhengceku/2020-11/03/content_5557118.htm"
+    }
+  ]
+}

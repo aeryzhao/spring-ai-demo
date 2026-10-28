@@ -1,0 +1,58 @@
+server:
+  port: 8098
+
+spring:
+  application:
+    name: customer-service
+
+  config:
+    import: optional:file:../local-config.yaml,optional:file:./local-config.yaml
+
+  ai:
+    model:
+      chat: openai
+      embedding: ollama
+
+    openai:
+      api-key: ${deepseek.api-key}
+      base-url: ${deepseek.base-url}
+      chat:
+        model: ${deepseek.chat-model}
+        temperature: 0.3
+
+    ollama:
+      base-url: ${ollama.base-url:http://127.0.0.1:11434}
+      embedding:
+        model: ${ollama.embedding-model:qwen3-embedding}
+
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  packages-to-scan: org.aeryzhao.customerservice
+
+logging:
+  level:
+    org.aeryzhao.customerservice: INFO
+
+customer-service:
+  # 数据目录：knowledge/ 放抓取到的知识文档，vector-store.json 是向量索引缓存，
+  # orders.json / logistics.json 是模拟业务数据，tickets.json 是运行期产生的工单。
+  # 相对路径会由 DataDirectoryResolver 定位：优先模块目录（customer-service/data），
+  # 其次当前工作目录，其次工作目录下的 customer-service/data；启动日志会打印最终解析结果。
+  # 也可以配置绝对路径强制指定。
+  data-dir: ./data
+  top-k: 4
+  chunk-size: 600
+  chunk-overlap: 100
+  memory-window: 20
+  crawl:
+    user-agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
+    timeout-ms: 20000
+    interval-ms: 800
+    # 部分政府站点的证书链不在 JDK 信任库中（PKIX path building failed），
+    # 抓取公开页面时放宽证书校验；如果只抓企业自有域名，建议改为 false
+    lenient-tls: true

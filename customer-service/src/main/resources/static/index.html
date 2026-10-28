@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>京选商城 · 智能客服小京</title>
+  <style>
+    :root {
+      --bg: #f4f6fb;
+      --panel: #ffffff;
+      --ink: #1f2430;
+      --muted: #6b7488;
+      --line: #e6e9f2;
+      --brand: #c8102e;
+      --brand-soft: #fdecef;
+      --user-bg: #c8102e;
+      --bot-bg: #ffffff;
+      --shadow: 0 8px 30px rgba(24, 34, 64, .08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: radial-gradient(1200px 600px at 15% -10%, #ffe8ec 0%, transparent 55%), var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 28px 16px;
+    }
+
+    .app {
+      width: min(920px, 100%);
+      background: var(--panel);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      height: min(860px, calc(100vh - 56px));
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(120deg, #fff 0%, #fff8f9 100%);
+    }
+
+    .avatar {
+      width: 44px; height: 44px; border-radius: 14px;
+      background: linear-gradient(135deg, #ff5a72, #c8102e);
+      color: #fff; font-weight: 700; font-size: 18px;
+      display: grid; place-items: center;
+      box-shadow: 0 6px 16px rgba(200, 16, 46, .28);
+      flex: none;
+    }
+
+    .title-block { flex: 1; min-width: 0; }
+    .title-block h1 { font-size: 16px; margin: 0 0 4px; font-weight: 650; }
+    .meta { font-size: 12px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #f2f4fa; border-radius: 999px; padding: 2px 9px; font-size: 11.5px;
+    }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; }
+    .dot.warn { background: #f59e0b; }
+
+    .ghost-btn {
+      border: 1px solid var(--line); background: #fff; color: var(--muted);
+      border-radius: 10px; padding: 8px 12px; font-size: 12.5px; cursor: pointer;
+      transition: .18s; flex: none;
+    }
+    .ghost-btn:hover { border-color: #d6dbe9; color: var(--ink); background: #fafbff; }
+
+    #messages {
+      flex: 1; overflow-y: auto; padding: 22px;
+      display: flex; flex-direction: column; gap: 16px;
+      scroll-behavior: smooth;
+    }
+
+    .row { display: flex; gap: 10px; align-items: flex-start; }
+    .row.user { flex-direction: row-reverse; }
+
+    .bubble {
+      max-width: min(680px, 82%);
+      padding: 12px 15px;
+      border-radius: 14px;
+      line-height: 1.62;
+      font-size: 14.5px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .row.bot .bubble { background: var(--bot-bg); border: 1px solid var(--line); border-top-left-radius: 4px; }
+    .row.user .bubble { background: var(--user-bg); color: #fff; border-top-right-radius: 4px; box-shadow: 0 6px 18px rgba(200,16,46,.22); }
+
+    .bubble strong { color: #b8102a; }
+    .row.user .bubble strong { color: #fff; }
+
+    .bubble .cite {
+      display: inline-block; min-width: 16px; text-align: center;
+      font-size: 11px; color: #b8102a; background: var(--brand-soft);
+      border-radius: 5px; padding: 0 4px; margin: 0 1px; vertical-align: 1px;
+    }
+    .row.user .bubble .cite { background: rgba(255,255,255,.22); color: #fff; }
+
+    .tagline { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .tag {
+      font-size: 11.5px; color: #4b5468; background: #f5f7fc;
+      border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px;
+    }
+    .tag.tool { color: #1d6f42; background: #eefaf2; border-color: #cdebd8; }
+
+    details.sources {
+      margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px;
+      font-size: 12.5px; color: var(--muted);
+    }
+    details.sources summary { cursor: pointer; color: #3b4256; list-style: none; }
+    details.sources summary::-webkit-details-marker { display: none; }
+    details.sources summary::after { content: " ▾"; }
+    details.sources[open] summary::after { content: " ▴"; }
+    .source-item { margin: 8px 0 0; padding-left: 10px; border-left: 2px solid var(--line); }
+    .source-item a { color: #2a5ada; text-decoration: none; }
+    .source-item a:hover { text-decoration: underline; }
+    .source-item p { margin: 3px 0 0; color: #6b7488; line-height: 1.5; }
+
+    .typing { display: inline-flex; gap: 4px; align-items: center; height: 18px; }
+    .typing i {
+      width: 6px; height: 6px; border-radius: 50%; background: #c7ccdb;
+      animation: blink 1.2s infinite ease-in-out;
+    }
+    .typing i:nth-child(2) { animation-delay: .2s; }
+    .typing i:nth-child(3) { animation-delay: .4s; }
+    @keyframes blink { 0%, 80%, 100% { opacity: .25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-2px); } }
+
+    footer { border-top: 1px solid var(--line); padding: 14px 18px 16px; background: #fff; }
+
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .chip {
+      border: 1px solid var(--line); background: #fafbff; color: #45506a;
+      border-radius: 999px; padding: 6px 12px; font-size: 12.5px; cursor: pointer; transition: .18s;
+    }
+    .chip:hover { border-color: #f0b7c2; background: var(--brand-soft); color: #b8102a; }
+
+    .input-bar { display: flex; gap: 10px; align-items: flex-end; }
+    textarea {
+      flex: 1; resize: none; border: 1px solid var(--line); border-radius: 12px;
+      padding: 11px 14px; font-size: 14.5px; font-family: inherit; line-height: 1.5;
+      min-height: 46px; max-height: 132px; outline: none; transition: .18s; color: var(--ink);
+    }
+    textarea:focus { border-color: #f0b7c2; box-shadow: 0 0 0 3px rgba(200,16,46,.08); }
+
+    .send {
+      border: none; border-radius: 12px; padding: 0 20px; height: 46px;
+      background: linear-gradient(135deg, #ff5a72, #c8102e); color: #fff;
+      font-size: 14.5px; font-weight: 600; cursor: pointer; transition: .18s; flex: none;
+    }
+    .send:hover { filter: brightness(1.05); }
+    .send:disabled { opacity: .55; cursor: not-allowed; }
+
+    .hint { font-size: 11.5px; color: #9aa2b6; margin-top: 8px; }
+    .error { color: #b42318; background: #fff1f0; border: 1px solid #ffd6d2; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="avatar">京</div>
+    <div class="title-block">
+      <h1>智能客服 · 小京</h1>
+      <div class="meta">
+        <span class="pill" id="mode-pill"><span class="dot" id="mode-dot"></span><span id="mode-text">检索模式加载中…</span></span>
+        <span class="pill" id="doc-pill">知识库：—</span>
+        <span class="pill" id="order-pill">订单数据：本地模拟</span>
+      </div>
+    </div>
+    <button class="ghost-btn" id="reset-btn" title="清空当前会话上下文">新会话</button>
+  </header>
+
+  <div id="messages"></div>
+
+  <footer>
+    <div class="chips" id="chips"></div>
+    <div class="input-bar">
+      <textarea id="input" rows="1" placeholder="想咨询订单、物流、退换货或发票？直接问我，例如：我的订单 JD202610120001 还能退吗？"></textarea>
+      <button class="send" id="send-btn">发送</button>
+    </div>
+    <div class="hint">Enter 发送 · Shift + Enter 换行 · 回答基于抓取到的帮助中心政策 + 订单工具实时查询</div>
+  </footer>
+</div>
+
+<script>
+  const QUICK_QUESTIONS = [
+    '我的订单 JD202610120001 还能七天无理由退货吗？',
+    '订单 JD202610240004 现在到哪了？',
+    '第三方卖家商品怎么申请售后？',
+    '发票可以开增值税专用发票吗？',
+    '配送费是怎么收取的？',
+    '我要退货，商品已经拆封了怎么办？'
+  ];
+
+  const messagesEl = document.getElementById('messages');
+  const inputEl = document.getElementById('input');
+  const sendBtn = document.getElementById('send-btn');
+  const chipsEl = document.getElementById('chips');
+  const resetBtn = document.getElementById('reset-btn');
+
+  let sessionId = localStorage.getItem('cs-session-id') || '';
+  let streaming = false;
+
+  QUICK_QUESTIONS.forEach(text => {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.textContent = text;
+    chip.addEventListener('click', () => {
+      inputEl.value = text;
+      submit();
+    });
+    chipsEl.appendChild(chip);
+  });
+
+  resetBtn.addEventListener('click', () => {
+    sessionId = '';
+    localStorage.removeItem('cs-session-id');
+    messagesEl.innerHTML = '';
+    greet();
+  });
+
+  inputEl.addEventListener('keydown', event => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      submit();
+    }
+  });
+  inputEl.addEventListener('input', () => {
+    inputEl.style.height = 'auto';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 132) + 'px';
+  });
+  sendBtn.addEventListener('click', submit);
+
+  function greet() {
+    appendBot('你好，我是智能客服小京 👋 可以帮你查订单、看物流、判断能否退换货。\n'
+      + '下面这些问题可以直接点，也可以自己描述。');
+  }
+
+  function submit() {
+    if (streaming) return;
+    const text = inputEl.value.trim();
+    if (!text) return;
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+    appendUser(text);
+    stream(text);
+  }
+
+  function stream(question) {
+    streaming = true;
+    sendBtn.disabled = true;
+
+    const row = appendRow('bot');
+    const bubble = row.querySelector('.bubble');
+    bubble.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
+
+    let answer = '';
+    let sources = [];
+    let started = false;
+
+    const url = '/api/chat/stream?message=' + encodeURIComponent(question)
+      + (sessionId ? '&sessionId=' + encodeURIComponent(sessionId) : '');
+    const es = new EventSource(url);
+
+    const finish = () => {
+      es.close();
+      streaming = false;
+      sendBtn.disabled = false;
+      inputEl.focus();
+    };
+
+    es.addEventListener('meta', event => {
+      const meta = JSON.parse(event.data);
+      sessionId = meta.sessionId || sessionId;
+      localStorage.setItem('cs-session-id', sessionId);
+      sources = meta.sources || [];
+      updateMode(meta.retrievalMode);
+    });
+
+    es.addEventListener('token', event => {
+      if (!started) {
+        bubble.innerHTML = '';
+        started = true;
+      }
+      answer += event.data;
+      bubble.innerHTML = renderMarkdown(answer);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    });
+
+    es.addEventListener('done', event => {
+      let toolCalls = [];
+      try { toolCalls = JSON.parse(event.data).toolCalls || []; } catch (ignored) {}
+      if (!started) {
+        bubble.innerHTML = '（没有收到回答，请稍后重试）';
+      } else {
+        bubble.innerHTML = renderMarkdown(answer);
+      }
+      attachMeta(row, sources, toolCalls);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      finish();
+    });
+
+    es.addEventListener('error', event => {
+      let message = '回答生成失败，请稍后重试。';
+      try { message = JSON.parse(event.data).message || message; } catch (ignored) {}
+      bubble.classList.add('error');
+      bubble.textContent = message;
+      finish();
+    });
+
+    es.onerror = () => {
+      if (streaming) {
+        finish();
+        if (!answer) {
+          bubble.classList.add('error');
+          bubble.textContent = '连接中断，请检查服务是否已启动（http://localhost:8098）。';
+        }
+      }
+    };
+  }
+
+  function attachMeta(row, sources, toolCalls) {
+    const holder = document.createElement('div');
+    if (toolCalls && toolCalls.length) {
+      const tags = document.createElement('div');
+      tags.className = 'tagline';
+      toolCalls.forEach(call => {
+        const tag = document.createElement('span');
+        tag.className = 'tag tool';
+        tag.textContent = '🛠 ' + call;
+        tags.appendChild(tag);
+      });
+      holder.appendChild(tags);
+    }
+    if (sources && sources.length) {
+      const details = document.createElement('details');
+      details.className = 'sources';
+      const summary = document.createElement('summary');
+      summary.textContent = '参考了 ' + sources.length + ' 条知识';
+      details.appendChild(summary);
+      sources.forEach((source, index) => {
+        const item = document.createElement('div');
+        item.className = 'source-item';
+        const link = document.createElement('a');
+        link.href = source.source || '#';
+        link.target = '_blank';
+        link.rel = 'noreferrer';
+        link.textContent = '[' + (index + 1) + '] ' + source.title + ' · ' + (source.category || '');
+        const text = document.createElement('p');
+        text.textContent = source.snippet;
+        item.appendChild(link);
+        item.appendChild(text);
+        details.appendChild(item);
+      });
+      holder.appendChild(details);
+    }
+    if (holder.childNodes.length) {
+      row.querySelector('.bubble').appendChild(holder);
+    }
+  }
+
+  function renderMarkdown(text) {
+    let html = escapeHtml(text);
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+    html = html.replace(/\[(\d+)\]/g, '<span class="cite">$1</span>');
+    html = html.replace(/^- (.*)$/gm, '· $1');
+    return html;
+  }
+
+  function escapeHtml(text) {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function appendRow(kind) {
+    const row = document.createElement('div');
+    row.className = 'row ' + kind;
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    row.appendChild(bubble);
+    messagesEl.appendChild(row);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return row;
+  }
+
+  function appendUser(text) {
+    const row = appendRow('user');
+    row.querySelector('.bubble').textContent = text;
+  }
+
+  function appendBot(text) {
+    const row = appendRow('bot');
+    row.querySelector('.bubble').textContent = text;
+  }
+
+  function updateMode(mode) {
+    const dot = document.getElementById('mode-dot');
+    const text = document.getElementById('mode-text');
+    if (mode === 'VECTOR') {
+      dot.className = 'dot';
+      text.textContent = '向量检索（Ollama）';
+    } else if (mode === 'KEYWORD') {
+      dot.className = 'dot warn';
+      text.textContent = '关键词检索（降级）';
+    } else {
+      dot.className = 'dot warn';
+      text.textContent = '知识库为空';
+    }
+  }
+
+  async function loadStats() {
+    try {
+      const response = await fetch('/api/knowledge/stats');
+      const stats = await response.json();
+      document.getElementById('doc-pill').textContent =
+        '知识库：' + (stats.documents ?? 0) + ' 篇 / ' + (stats.chunks ?? 0) + ' 片段';
+      updateMode(stats.mode);
+      if (stats.lastError) {
+        document.getElementById('mode-text').title = stats.lastError;
+      }
+    } catch (e) {
+      document.getElementById('doc-pill').textContent = '知识库：未就绪';
+    }
+  }
+
+  greet();
+  loadStats();
+</script>
+</body>
+</html>

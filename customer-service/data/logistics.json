@@ -1,0 +1,128 @@
+{
+  "shipments": [
+    {
+      "trackingNo": "JDVA00012345678",
+      "company": "京东物流",
+      "status": "已签收",
+      "events": [
+        {
+          "time": "2026-10-22T20:10:00+08:00",
+          "location": "北京亦庄分拣中心",
+          "description": "您的订单已出库，发往北京亦庄分拣中心"
+        },
+        {
+          "time": "2026-10-23T07:35:00+08:00",
+          "location": "北京朝阳望京营业部",
+          "description": "快件已到达营业部，正在派送"
+        },
+        {
+          "time": "2026-10-23T15:40:00+08:00",
+          "location": "北京朝阳望京营业部",
+          "description": "已签收，签收人：本人。感谢使用京东物流"
+        }
+      ]
+    },
+    {
+      "trackingNo": "JDVA00012340002",
+      "company": "京东物流",
+      "status": "已签收",
+      "events": [
+        {
+          "time": "2026-10-14T18:00:00+08:00",
+          "location": "北京大兴分拣中心",
+          "description": "您的订单已出库"
+        },
+        {
+          "time": "2026-10-15T11:12:00+08:00",
+          "location": "北京丰台营业部",
+          "description": "已签收，签收人：本人"
+        }
+      ]
+    },
+    {
+      "trackingNo": "JDVA00012340003",
+      "company": "京东冷链",
+      "status": "已签收",
+      "events": [
+        {
+          "time": "2026-10-04T21:30:00+08:00",
+          "location": "苏州阳澄湖冷链仓",
+          "description": "大闸蟹已打包，冷链发出"
+        },
+        {
+          "time": "2026-10-05T09:20:00+08:00",
+          "location": "上海浦东营业部",
+          "description": "已签收，签收人：本人"
+        }
+      ]
+    },
+    {
+      "trackingNo": "JDVA00012340004",
+      "company": "京东物流",
+      "status": "运输中",
+      "events": [
+        {
+          "time": "2026-10-25T06:20:00+08:00",
+          "location": "广州黄埔分拣中心",
+          "description": "您的订单已出库"
+        },
+        {
+          "time": "2026-10-25T11:05:00+08:00",
+          "location": "广州黄埔分拣中心",
+          "description": "快件已装车，预计 10-26 前送达"
+        }
+      ]
+    },
+    {
+      "trackingNo": "JDVA00012340006",
+      "company": "京东物流",
+      "status": "已签收",
+      "events": [
+        {
+          "time": "2026-09-18T10:00:00+08:00",
+          "location": "杭州定制工坊",
+          "description": "定制商品已完成制作并发货"
+        },
+        {
+          "time": "2026-09-20T10:05:00+08:00",
+          "location": "杭州西湖营业部",
+          "description": "已签收，签收人：家人代收"
+        }
+      ]
+    },
+    {
+      "trackingNo": "JDVA00012340007",
+      "company": "京东物流",
+      "status": "已签收",
+      "events": [
+        {
+          "time": "2026-10-22T09:10:00+08:00",
+          "location": "北京通州营业部",
+          "description": "快件已到达营业部"
+        },
+        {
+          "time": "2026-10-22T18:30:00+08:00",
+          "location": "北京通州营业部",
+          "description": "已签收，签收人：本人"
+        }
+      ]
+    },
+    {
+      "trackingNo": "JDVA00012340008",
+      "company": "京东物流",
+      "status": "已签收",
+      "events": [
+        {
+          "time": "2026-10-19T22:40:00+08:00",
+          "location": "北京顺义分拣中心",
+          "description": "您的订单已出库"
+        },
+        {
+          "time": "2026-10-20T09:48:00+08:00",
+          "location": "北京海淀营业部",
+          "description": "已签收，签收人：本人"
+        }
+      ]
+    }
+  ]
+}

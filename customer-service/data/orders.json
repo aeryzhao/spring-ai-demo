@@ -1,0 +1,179 @@
+{
+  "orders": [
+    {
+      "orderNo": "JD202610120001",
+      "customerName": "张伟",
+      "phone": "13800001111",
+      "items": [
+        {
+          "sku": "100012043978",
+          "name": "Apple iPhone 17 128GB 黑色",
+          "category": "手机通讯",
+          "price": 5999.0,
+          "qty": 1
+        }
+      ],
+      "totalAmount": 5999.0,
+      "status": "已送达",
+      "payMethod": "在线支付-微信",
+      "invoiceType": "电子普通发票",
+      "createdAt": "2026-10-12T10:21:00+08:00",
+      "deliveredAt": "2026-10-23T15:40:00+08:00",
+      "trackingNo": "JDVA00012345678"
+    },
+    {
+      "orderNo": "JD202610090002",
+      "customerName": "张伟",
+      "phone": "13800001111",
+      "items": [
+        {
+          "sku": "100009876543",
+          "name": "米家空气净化器 5 Pro",
+          "category": "家用电器",
+          "price": 1299.0,
+          "qty": 1
+        },
+        {
+          "sku": "100008765432",
+          "name": "米家滤芯套装（3 只装）",
+          "category": "家用电器",
+          "price": 199.0,
+          "qty": 1
+        }
+      ],
+      "totalAmount": 1498.0,
+      "status": "已送达",
+      "payMethod": "在线支付-京东支付",
+      "invoiceType": "增值税专用发票",
+      "createdAt": "2026-10-09T09:05:00+08:00",
+      "deliveredAt": "2026-10-15T11:12:00+08:00",
+      "trackingNo": "JDVA00012340002"
+    },
+    {
+      "orderNo": "JD202609280003",
+      "customerName": "李静",
+      "phone": "13900002222",
+      "items": [
+        {
+          "sku": "100007654321",
+          "name": "阳澄湖大闸蟹礼券 公4两母3两 8只装",
+          "category": "生鲜",
+          "price": 299.0,
+          "qty": 1
+        }
+      ],
+      "totalAmount": 299.0,
+      "status": "已送达",
+      "payMethod": "在线支付-支付宝",
+      "invoiceType": "电子普通发票",
+      "createdAt": "2026-09-28T20:30:00+08:00",
+      "deliveredAt": "2026-10-05T09:20:00+08:00",
+      "trackingNo": "JDVA00012340003"
+    },
+    {
+      "orderNo": "JD202610240004",
+      "customerName": "王强",
+      "phone": "13700003333",
+      "items": [
+        {
+          "sku": "100006543210",
+          "name": "戴森 Supersonic 吹风机 HD16",
+          "category": "个护电器",
+          "price": 2999.0,
+          "qty": 1
+        }
+      ],
+      "totalAmount": 2999.0,
+      "status": "已发货",
+      "payMethod": "在线支付-白条",
+      "invoiceType": "电子普通发票",
+      "createdAt": "2026-10-24T14:02:00+08:00",
+      "deliveredAt": null,
+      "trackingNo": "JDVA00012340004"
+    },
+    {
+      "orderNo": "JD202610250005",
+      "customerName": "王强",
+      "phone": "13700003333",
+      "items": [
+        {
+          "sku": "100005432109",
+          "name": "深入理解计算机系统 原书第3版",
+          "category": "图书音像",
+          "price": 139.0,
+          "qty": 1
+        }
+      ],
+      "totalAmount": 139.0,
+      "status": "待发货",
+      "payMethod": "货到付款",
+      "invoiceType": "不开发票",
+      "createdAt": "2026-10-25T08:15:00+08:00",
+      "deliveredAt": null,
+      "trackingNo": null
+    },
+    {
+      "orderNo": "JD202609150006",
+      "customerName": "李静",
+      "phone": "13900002222",
+      "items": [
+        {
+          "sku": "100004321098",
+          "name": "定制刻字足银手镯（内圈刻字：平安喜乐）",
+          "category": "定制商品",
+          "price": 899.0,
+          "qty": 1
+        }
+      ],
+      "totalAmount": 899.0,
+      "status": "已送达",
+      "payMethod": "在线支付-微信",
+      "invoiceType": "电子普通发票",
+      "createdAt": "2026-09-15T16:45:00+08:00",
+      "deliveredAt": "2026-09-20T10:05:00+08:00",
+      "trackingNo": "JDVA00012340006"
+    },
+    {
+      "orderNo": "JD202610200007",
+      "customerName": "张伟",
+      "phone": "13800001111",
+      "items": [
+        {
+          "sku": "100003210987",
+          "name": "纯棉无痕内裤 3 条装",
+          "category": "内衣",
+          "price": 149.0,
+          "qty": 1
+        }
+      ],
+      "totalAmount": 149.0,
+      "status": "已送达",
+      "payMethod": "在线支付-微信",
+      "invoiceType": "电子普通发票",
+      "createdAt": "2026-10-20T11:30:00+08:00",
+      "deliveredAt": "2026-10-22T18:30:00+08:00",
+      "trackingNo": "JDVA00012340007"
+    },
+    {
+      "orderNo": "JD202610180008",
+      "customerName": "陈晨",
+      "phone": "13600004444",
+      "items": [
+        {
+          "sku": "100002109876",
+          "name": "ThinkPad X1 Carbon 2026 款 14 英寸",
+          "category": "电脑办公",
+          "price": 14999.0,
+          "qty": 1
+        }
+      ],
+      "totalAmount": 14999.0,
+      "status": "已完成",
+      "payMethod": "在线支付-京东支付",
+      "invoiceType": "增值税专用发票",
+      "createdAt": "2026-10-18T19:10:00+08:00",
+      "deliveredAt": "2026-10-20T09:48:00+08:00",
+      "trackingNo": "JDVA00012340008"
+    }
+  ]
+}
